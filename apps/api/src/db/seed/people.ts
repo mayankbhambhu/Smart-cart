@@ -1,0 +1,34 @@
+export const FIRST_NAMES = [
+  'Aarav', 'Vivaan', 'Aditya', 'Vihaan', 'Arjun', 'Sai', 'Reyansh', 'Ayaan', 'Krishna', 'Ishaan',
+  'Shaurya', 'Atharv', 'Kabir', 'Dhruv', 'Rudra', 'Aryan', 'Karthik', 'Nikhil', 'Rohan', 'Varun',
+  'Ananya', 'Diya', 'Aadhya', 'Saanvi', 'Pari', 'Myra', 'Anika', 'Navya', 'Kiara', 'Ira',
+  'Meera', 'Riya', 'Sneha', 'Pooja', 'Kavya', 'Isha', 'Tanvi', 'Nisha', 'Shreya', 'Aditi',
+  'Farhan', 'Zoya', 'Imran', 'Sara', 'Joseph', 'Maria', 'Gurpreet', 'Harleen', 'Tenzin', 'Lakshmi',
+];
+
+export const LAST_NAMES = [
+  'Sharma', 'Verma', 'Iyer', 'Reddy', 'Nair', 'Patel', 'Mehta', 'Gupta', 'Singh', 'Kumar',
+  'Rao', 'Menon', 'Joshi', 'Desai', 'Kulkarni', 'Banerjee', 'Chatterjee', 'Das', 'Pillai', 'Shetty',
+  'Khan', 'Fernandes', "D'Souza", 'Bhat', 'Hegde', 'Agarwal', 'Malhotra', 'Kapoor', 'Chopra', 'Saxena',
+];
+
+export const CITIES_BY_STORE: Record<string, { city: string; state: string; localities: string[]; pincode: string }> = {
+  'BLR-IND-01': {
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    localities: ['HAL 2nd Stage', 'Domlur', 'Defence Colony', 'Jeevan Bima Nagar', 'CMH Road'],
+    pincode: '560038',
+  },
+  'BLR-KOR-02': {
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    localities: ['Koramangala 4th Block', 'Koramangala 6th Block', 'ST Bed Layout', 'Ejipura', 'HSR Layout'],
+    pincode: '560034',
+  },
+  'MUM-BAN-01': {
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    localities: ['Pali Hill', 'Carter Road', 'Khar West', 'Bandstand', 'Linking Road'],
+    pincode: '400050',
+  },
+};

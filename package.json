@@ -1,0 +1,34 @@
+{
+  "name": "smartcart",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SmartCart: 10-minute delivery, scheduled pickup and scan-and-go in-store shopping, with store operations and admin consoles.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w @smartcart/api\" \"npm run dev -w @smartcart/web\"",
+    "dev:api": "npm run dev -w @smartcart/api",
+    "dev:web": "npm run dev -w @smartcart/web",
+    "dev:mobile": "npm run start -w @smartcart/mobile",
+    "build": "npm run build -w @smartcart/api && npm run build -w @smartcart/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @smartcart/shared && npm run test -w @smartcart/api",
+    "test:e2e": "npm run test:e2e -w @smartcart/web",
+    "db:generate": "npm run db:generate -w @smartcart/api",
+    "db:migrate": "npm run db:migrate -w @smartcart/api",
+    "db:seed": "npm run db:seed -w @smartcart/api",
+    "db:reset": "npm run db:reset -w @smartcart/api",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3"
+  }
+}
