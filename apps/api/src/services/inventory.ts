@@ -8,7 +8,8 @@ import {
   type RestockAlert,
   type StockStatus,
 } from '@smartcart/shared';
-import { aliasedTable, and, asc, count, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { db, type Executor, type Transaction } from '../db/client';
 import {
   attendanceRecords,
@@ -364,8 +365,8 @@ async function broadcastAlert(alertId: string): Promise<void> {
   if (alert) broadcast.toStoreOps(alert.storeId, SocketEvents.ALERT_CHANGED, alert);
 }
 
-const acknowledgedBy = aliasedTable(users, 'acknowledged_by');
-const resolvedBy = aliasedTable(users, 'resolved_by');
+const acknowledgedBy = alias(users, 'acknowledged_by');
+const resolvedBy = alias(users, 'resolved_by');
 
 function alertQuery(executor: Executor) {
   return executor

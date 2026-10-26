@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { isProduction } from '../config/env';
 import { logger } from '../lib/logger';
-import { db, pool } from './client';
+import { db, pool } from '../db/client';
 
 /** Drops every table, type and migration record. Development only. */
 async function reset(): Promise<void> {

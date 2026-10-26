@@ -71,6 +71,7 @@ const EnvSchema = z.object({
   PUSH_ENABLED: bool(true),
 
   ENABLE_JOBS: bool(true),
+  MIGRATE_ON_START: bool(false),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

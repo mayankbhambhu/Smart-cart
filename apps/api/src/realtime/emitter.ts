@@ -36,6 +36,10 @@ export const broadcast = {
   toOrder: (orderId: string, event: SocketEventName, payload: unknown) => emit(rooms.order(orderId), event, payload),
   toSession: (sessionId: string, event: SocketEventName, payload: unknown) => emit(rooms.session(sessionId), event, payload),
   toAdmins: (event: SocketEventName, payload: unknown) => emit(rooms.admins(), event, payload),
+  /** One emit to several rooms; a socket in more than one of them receives it once. */
+  toRooms: (targets: string[], event: SocketEventName, payload: unknown) => {
+    if (io && targets.length > 0) io.to(targets).emit(event, payload);
+  },
 };
 
 export { SocketEvents };

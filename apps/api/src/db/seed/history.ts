@@ -7,7 +7,7 @@ import {
   type StoreFees,
 } from '@smartcart/shared';
 import { sha256 } from '../../lib/crypto';
-import { addDays, zonedParts, zonedToUtc } from '../../lib/time';
+import { addDays, daysBetween, zonedParts, zonedToUtc } from '../../lib/time';
 import { db } from '../client';
 import { exitPasses, gateEvents, offerRedemptions, orderEvents, orderItems, orders, payments } from '../schema';
 import { chunk, type Random } from './random';
@@ -46,6 +46,8 @@ export interface HistoryCustomer {
   name: string;
   phone: string;
   weight: number;
+  /** first day (index into the history window) the customer shops */
+  joinDay: number;
   address: {
     label: 'HOME' | 'WORK' | 'OTHER';
     line1: string;
@@ -211,9 +213,11 @@ export async function seedOrderHistory(
     }
     slots.sort((a, b) => a.placedAt.getTime() - b.placedAt.getTime());
 
+    const firstDate = firstDay;
     for (const { date, weekend, channel, placedAt } of slots) {
 
-      const customer = rng.weighted(store.customers, (c) => c.weight);
+      const eligible = store.customers.filter((c) => c.joinDay <= daysBetween(firstDay, date));
+      const customer = rng.weighted(eligible.length > 0 ? eligible : store.customers, (c) => c.weight);
       const isFirstOrder = !customersWithOrders.has(customer.id);
       customersWithOrders.add(customer.id);
 
@@ -420,7 +424,7 @@ export async function seedOrderHistory(
           orderId,
           userId: customer.id,
           storeId: store.id,
-          discount: bill.couponDiscount,
+          discount: evaluation.freeDelivery ? store.fees.deliveryFee : bill.couponDiscount,
           createdAt: placedAt,
         });
       }

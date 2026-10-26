@@ -173,7 +173,6 @@ export interface Category {
   name: string;
   emoji: string;
   color: string;
-  parentId: string | null;
   sortOrder: number;
   productCount?: number;
 }
@@ -470,8 +469,14 @@ export interface OrderEvent {
 
 export interface ExitPass {
   id: string;
-  token: string;
-  uri: string;
+  /**
+   * The bearer token encoded in the QR/barcode. Only returned right after it
+   * is issued or re-issued (POST /orders/:id/exit-pass); the server stores a hash.
+   */
+  token: string | null;
+  uri: string | null;
+  /** Last characters of the token, for support look-ups. */
+  hint: string;
   status: ExitPassStatus;
   issuedAt: ISODateTime;
   expiresAt: ISODateTime;
@@ -867,7 +872,8 @@ export interface BasketInsights {
 export interface CustomerInsights {
   dietary: { tag: DietaryTag; customers: number; share: number }[];
   newVsReturning: { period: ISODate; newCustomers: number; returningCustomers: number }[];
-  topCities: { city: string; orders: number }[];
+  /** Neighbourhoods placing the most delivery orders. */
+  topLocalities: { locality: string; orders: number }[];
 }
 
 export interface StaffPerformance {

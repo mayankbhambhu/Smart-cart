@@ -1,11 +1,10 @@
 import { generateLayout, type CandidateDetails, type DietaryTag, type StaffRole } from '@smartcart/shared';
 import { and, eq, inArray, lte, sql } from 'drizzle-orm';
-import { pathToFileURL } from 'node:url';
 import { hashPassword, randomToken, sha256 } from '../../lib/crypto';
 import { logger } from '../../lib/logger';
 import { addDays, zonedParts } from '../../lib/time';
 import { DEFAULT_STORE_SETTINGS } from '../../modules/stores/settings';
-import { db, pool } from '../client';
+import { db } from '../client';
 import {
   addresses,
   categories,
@@ -364,7 +363,9 @@ export async function seed(): Promise<void> {
   generatedRows.forEach((u, i) => {
     const g = generated[i]!;
     const list = historyCustomers.get(g.storeCode) ?? [];
-    list.push({ id: u.id, name: u.name, phone: g.phone, weight: g.weight, address: customerAddress(g.storeCode, u.name, g.phone) });
+    // 40% were already customers when the history starts; the rest sign up over the 120 days.
+    const joinDay = rng.chance(0.4) ? 0 : rng.int(1, 118);
+    list.push({ id: u.id, name: u.name, phone: g.phone, weight: g.weight, joinDay, address: customerAddress(g.storeCode, u.name, g.phone) });
     historyCustomers.set(g.storeCode, list);
   });
   const priyaHome: HistoryCustomer['address'] = {
@@ -381,8 +382,15 @@ export async function seed(): Promise<void> {
     receiverPhone: '+919900000001',
   };
   historyCustomers.get('BLR-IND-01')!.push(
-    { id: priya.id, name: priya.name, phone: priya.phone!, weight: 6, address: priyaHome },
-    { id: rohit.id, name: rohit.name, phone: rohit.phone!, weight: 3, address: { ...priyaHome, receiverName: 'Rohit Sharma', receiverPhone: '+919900000002' } },
+    { id: priya.id, name: priya.name, phone: priya.phone!, weight: 6, joinDay: 0, address: priyaHome },
+    {
+      id: rohit.id,
+      name: rohit.name,
+      phone: rohit.phone!,
+      weight: 3,
+      joinDay: 0,
+      address: { ...priyaHome, receiverName: 'Rohit Sharma', receiverPhone: '+919900000002' },
+    },
   );
 
   await db.insert(addresses).values([
@@ -539,7 +547,8 @@ export async function seed(): Promise<void> {
           aisle: sp.aisle,
           row: sp.row,
           shelf: sp.shelf,
-          weight: 1 / (1 + (index % 9) * 0.35),
+          // A few SKUs barely sell, so the slow-mover report has something to show.
+          weight: index % 11 === 7 ? 0.03 : 1 / (1 + (index % 9) * 0.35),
         };
       }),
     });
@@ -559,7 +568,8 @@ export async function seed(): Promise<void> {
     getQty: o.getQty,
     channels: o.channels,
   }));
-  const history = await seedOrderHistory(rng, historyStores, historyOffers, 120, now);
+  const historyDays = Number(process.env.SEED_HISTORY_DAYS ?? 120);
+  const history = await seedOrderHistory(rng, historyStores, historyOffers, historyDays, now);
 
   // --- Workforce: shifts, attendance, tasks ----------------------------------
   let shiftCount = 0;
@@ -895,13 +905,4 @@ function printCredentials(deviceKeys: { store: string; name: string; key: string
     '',
   ];
   console.log(lines.join('\n'));
-}
-
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  seed()
-    .catch((error: unknown) => {
-      logger.error(error, 'Seed failed');
-      process.exitCode = 1;
-    })
-    .finally(() => pool.end());
 }
