@@ -12,7 +12,7 @@ import {
   type DietaryTag,
   type SavedPaymentMethod,
 } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { initPaymentSheet, initStripe, presentPaymentSheet, retrieveSetupIntent } from '@stripe/stripe-react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';

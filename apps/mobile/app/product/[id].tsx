@@ -1,5 +1,5 @@
 import { DIETARY_TAG_META, describeLocation, formatMoney, type CatalogProduct } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';

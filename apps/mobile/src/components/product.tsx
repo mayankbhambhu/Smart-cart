@@ -1,5 +1,5 @@
 import { formatMoney, shortLocation, type CatalogProduct, type ItemLocation } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useCart, useShop } from '@/lib/stores';

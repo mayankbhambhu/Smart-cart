@@ -1,5 +1,5 @@
 import type { AuthProvidersInfo, AuthSession, CustomerProfile, OtpRequestResult } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';

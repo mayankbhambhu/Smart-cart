@@ -1,5 +1,5 @@
 import { cleanSpokenQuery, describeLocation, formatMoney, type CatalogProduct } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useProductSearch } from '@/lib/hooks';

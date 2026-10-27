@@ -1,5 +1,5 @@
 import { SocketEvents, formatMoney, groupCode, pluralize, PAYMENT_METHOD_LABELS, type ExitPass, type Order } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Brightness from 'expo-brightness';
 import * as Haptics from 'expo-haptics';

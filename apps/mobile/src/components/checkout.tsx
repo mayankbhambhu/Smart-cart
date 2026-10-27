@@ -1,5 +1,5 @@
 import { formatMoney, PAYMENT_METHOD_LABELS, type Bill, type OrderChannel, type PaymentMethodType } from '@smartcart/shared';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePaymentsConfig, useSavedMethods } from '@/lib/hooks';
 import { colors, radius, space } from './theme';
