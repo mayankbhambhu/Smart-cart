@@ -737,6 +737,7 @@ export interface OpsOverview {
     itemsSold: number;
     exits: number;
   };
+  /** Yesterday up to the same time of day. */
   yesterday: { netSales: number; orders: number };
   activeShoppers: number;
   openAlerts: number;

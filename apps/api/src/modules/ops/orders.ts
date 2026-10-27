@@ -61,7 +61,8 @@ opsOrdersRouter.get('/overview', async (req, res) => {
   const [[todaySales], [yesterdaySales], hourly, [shoppers], [alerts], pending, [onDuty], todaysShifts, [taskCounts], [exits], gate] =
     await Promise.all([
       sales(start, end),
-      sales(yesterday.start, yesterday.end),
+      // Same time yesterday, so a morning check-in is not compared with a full day.
+      sales(yesterday.start, new Date(Math.min(yesterday.end.getTime(), now.getTime() - 86_400_000))),
       db
         .select({
           hour: sql<number>`extract(hour from ${orders.placedAt} at time zone ${timezone})::int`,

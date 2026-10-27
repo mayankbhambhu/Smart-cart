@@ -72,6 +72,8 @@ const EnvSchema = z.object({
 
   ENABLE_JOBS: bool(true),
   MIGRATE_ON_START: bool(false),
+  /** Sign-in attempts per IP per 15 minutes (login, OTP, password reset). */
+  AUTH_RATE_LIMIT: z.coerce.number().int().min(1).default(process.env.NODE_ENV === 'production' ? 30 : 500),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -42,7 +42,8 @@ import { googleClientIds, verifyAppleIdToken, verifyGoogleIdToken, type Verified
 import { sendSms, smsConfigured } from '../../services/sms';
 
 export const authRouter = Router();
-authRouter.use(authLimiter);
+// Only credential checks count towards the brute-force limit; refreshing a session does not.
+authRouter.use((req, res, next) => (req.method === 'POST' && !['/refresh', '/logout'].includes(req.path) ? authLimiter(req, res, next) : next()));
 
 const OTP_TTL_SECONDS = 300;
 const OTP_MAX_ATTEMPTS = 5;
