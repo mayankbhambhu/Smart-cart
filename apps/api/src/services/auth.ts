@@ -1,4 +1,4 @@
-import type { AuthSession, AuthUser, StaffMembership } from '@smartcart/shared';
+import type { AuthSession, AuthUser, StaffMembership, UserKind } from '@smartcart/shared';
 import { and, eq, gt, inArray, isNull } from 'drizzle-orm';
 import type { CookieOptions, Request, Response } from 'express';
 import { env } from '../config/env';
@@ -8,7 +8,10 @@ import { randomToken, sha256 } from '../lib/crypto';
 import { AppError } from '../lib/errors';
 import { signAccessToken } from '../lib/jwt';
 
-export const REFRESH_COOKIE = 'sc_refresh';
+/** One refresh cookie per account type, so a shopper and a staff login can coexist in one browser. */
+export function refreshCookieName(kind: UserKind): string {
+  return `sc_refresh_${kind.toLowerCase()}`;
+}
 
 export type UserRow = typeof users.$inferSelect;
 
@@ -56,8 +59,8 @@ function cookieOptions(): CookieOptions {
   };
 }
 
-export function clearRefreshCookie(res: Response): void {
-  res.clearCookie(REFRESH_COOKIE, { ...cookieOptions(), maxAge: undefined });
+export function clearRefreshCookie(res: Response, kind: UserKind): void {
+  res.clearCookie(refreshCookieName(kind), { ...cookieOptions(), maxAge: undefined });
 }
 
 /** Issues an access token plus a rotating refresh token (cookie for web, body for mobile). */
@@ -92,7 +95,7 @@ export async function issueSession(
   if (user.kind === 'CUSTOMER') {
     await db.insert(customerProfiles).values({ userId: user.id }).onConflictDoNothing();
   }
-  res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions());
+  res.cookie(refreshCookieName(user.kind), refreshToken, cookieOptions());
 
   return {
     user: serializeUser(user),
@@ -149,7 +152,8 @@ export async function revokeAllSessions(executor: Executor, userId: string): Pro
   if (user) await executor.update(users).set({ tokenVersion: user.v + 1 }).where(eq(users.id, userId));
 }
 
-export function readRefreshToken(req: Request, bodyToken: string | undefined): string | undefined {
+/** Mobile apps send the token in the body; browsers rely on the realm's httpOnly cookie. */
+export function readRefreshToken(req: Request, bodyToken: string | undefined, realm: UserKind): string | undefined {
   const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
-  return bodyToken ?? cookies?.[REFRESH_COOKIE];
+  return bodyToken ?? cookies?.[refreshCookieName(realm)];
 }

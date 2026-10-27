@@ -13,12 +13,12 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../../db/client';
 import { addresses, customerProfiles, notifications, orders, paymentMethods, pushTokens, users } from '../../db/schema';
-import { conflict, notFound } from '../../lib/errors';
+import { badRequest, conflict, notFound } from '../../lib/errors';
 import { parse } from '../../lib/validate';
 import { requireAuth, requireCustomer } from '../../middleware/auth';
 import { serializeUser } from '../../services/auth';
 import { serializeNotification } from '../../services/notifications';
-import { createStripeSetupIntent } from '../../services/payments';
+import { createStripeSetupIntent, describeStripeCard } from '../../services/payments';
 
 export const meRouter = Router();
 
@@ -239,22 +239,28 @@ meRouter.post('/payment-methods/stripe-setup', requireCustomer, async (req, res)
 meRouter.post('/payment-methods', requireCustomer, async (req, res) => {
   const input = parse(SavePaymentMethodSchema, req.body);
   const userId = req.auth!.userId;
-  const values: typeof paymentMethods.$inferInsert =
-    input.type === 'UPI'
-      ? { userId, type: 'UPI', provider: 'razorpay', label: input.upiId, upiId: input.upiId }
-      : input.type === 'PAYPAL'
-        ? { userId, type: 'PAYPAL', provider: 'paypal', label: `PayPal · ${input.email}`, email: input.email }
-        : {
-            userId,
-            type: 'CARD',
-            provider: input.stripePaymentMethodId ? 'stripe' : 'demo',
-            label: `${input.brand} •••• ${input.last4}`,
-            brand: input.brand,
-            last4: input.last4,
-            expMonth: input.expMonth,
-            expYear: input.expYear,
-            providerRef: input.stripePaymentMethodId ?? null,
-          };
+  let values: typeof paymentMethods.$inferInsert;
+  if (input.type === 'UPI') {
+    values = { userId, type: 'UPI', provider: 'razorpay', label: input.upiId, upiId: input.upiId };
+  } else if (input.type === 'PAYPAL') {
+    values = { userId, type: 'PAYPAL', provider: 'paypal', label: `PayPal · ${input.email}`, email: input.email };
+  } else {
+    const card = input.stripePaymentMethodId
+      ? await describeStripeCard(userId, input.stripePaymentMethodId)
+      : { brand: input.brand, last4: input.last4, expMonth: input.expMonth, expYear: input.expYear };
+    if (!card.brand || !card.last4 || !card.expMonth || !card.expYear) throw badRequest('Enter the card details');
+    values = {
+      userId,
+      type: 'CARD',
+      provider: input.stripePaymentMethodId ? 'stripe' : 'demo',
+      label: `${card.brand} •••• ${card.last4}`,
+      brand: card.brand,
+      last4: card.last4,
+      expMonth: card.expMonth,
+      expYear: card.expYear,
+      providerRef: input.stripePaymentMethodId ?? null,
+    };
+  }
   const created = await db.transaction(async (tx) => {
     const existing = await tx.select({ id: paymentMethods.id }).from(paymentMethods).where(eq(paymentMethods.userId, userId));
     const makeDefault = input.isDefault ?? existing.length === 0;

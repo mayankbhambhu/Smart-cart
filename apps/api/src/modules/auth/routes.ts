@@ -291,16 +291,16 @@ authRouter.post('/admin/login', async (req, res) => {
 
 authRouter.post('/refresh', async (req, res) => {
   const input = parse(RefreshSchema, req.body);
-  const token = readRefreshToken(req, input.refreshToken);
+  const token = readRefreshToken(req, input.refreshToken, input.realm);
   if (!token) throw unauthorized('Please sign in again');
   res.json(await rotateRefreshToken(token, req, res));
 });
 
 authRouter.post('/logout', async (req, res) => {
   const input = parse(RefreshSchema, req.body);
-  const token = readRefreshToken(req, input.refreshToken);
+  const token = readRefreshToken(req, input.refreshToken, input.realm);
   if (token) await revokeRefreshToken(token);
-  clearRefreshCookie(res);
+  clearRefreshCookie(res, input.realm);
   res.status(204).end();
 });
 

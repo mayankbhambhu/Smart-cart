@@ -364,6 +364,20 @@ async function ensureStripeCustomer(userId: string): Promise<string> {
   return customer.id;
 }
 
+/** Card details of a PaymentMethod saved through a SetupIntent; it must belong to the user's Stripe customer. */
+export async function describeStripeCard(
+  userId: string,
+  paymentMethodId: string,
+): Promise<{ brand: string; last4: string; expMonth: number; expYear: number }> {
+  if (!providerLive.stripe()) throw new AppError(501, 'STRIPE_NOT_CONFIGURED', 'Stripe is not configured');
+  const customerId = await ensureStripeCustomer(userId);
+  const method = await stripe!.paymentMethods.retrieve(paymentMethodId);
+  const owner = typeof method.customer === 'string' ? method.customer : method.customer?.id;
+  if (owner !== customerId || !method.card) throw new AppError(422, 'INVALID_PAYMENT_METHOD', 'This card could not be verified');
+  const brand = method.card.brand.charAt(0).toUpperCase() + method.card.brand.slice(1);
+  return { brand, last4: method.card.last4, expMonth: method.card.exp_month, expYear: method.card.exp_year };
+}
+
 export async function createStripeSetupIntent(userId: string): Promise<{ clientSecret: string; customerId: string; publishableKey: string }> {
   if (!providerLive.stripe()) {
     throw new AppError(501, 'STRIPE_NOT_CONFIGURED', 'Card saving through Stripe is not configured; cards are saved in demo mode');

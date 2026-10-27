@@ -10,7 +10,7 @@ describe('customer authentication', () => {
       .expect(201);
     expect(registered.body.user).toMatchObject({ kind: 'CUSTOMER', email, name: 'Ananya Test' });
     expect(registered.body.accessToken).toBeTypeOf('string');
-    expect(registered.headers['set-cookie']?.[0]).toMatch(/sc_refresh=.*HttpOnly/i);
+    expect(registered.headers['set-cookie']?.[0]).toMatch(/sc_refresh_customer=.*HttpOnly/i);
 
     await api().post('/api/v1/auth/login').send({ email, password: 'Secret123' }).expect(200);
     const wrong = await api().post('/api/v1/auth/login').send({ email, password: 'nope' }).expect(401);

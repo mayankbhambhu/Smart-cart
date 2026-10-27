@@ -22,6 +22,7 @@ import {
   TASK_STATUSES,
   TICKET_CATEGORIES,
   TICKET_STATUSES,
+  USER_KINDS,
   WAGE_TYPES,
 } from './constants';
 import { normalizePhone } from './format';
@@ -111,7 +112,11 @@ export const StaffLoginSchema = z.object({
 
 export const AdminLoginSchema = LoginSchema;
 
-export const RefreshSchema = z.object({ refreshToken: z.string().min(20).optional() });
+export const RefreshSchema = z.object({
+  refreshToken: z.string().min(20).optional(),
+  /** Which account's cookie to use when the token is not in the body (web). */
+  realm: z.enum(USER_KINDS).default('CUSTOMER'),
+});
 
 export const ChangePasswordSchema = z
   .object({
@@ -172,17 +177,22 @@ export const SavePaymentMethodSchema = z.discriminatedUnion('type', [
     upiId: UpiIdSchema,
     isDefault: z.boolean().optional(),
   }),
-  z.object({
-    type: z.literal('CARD'),
-    /** Stripe PaymentMethod id when Stripe is live; omitted in demo mode. */
-    stripePaymentMethodId: z.string().startsWith('pm_').optional(),
-    brand: z.string().trim().min(2).max(20),
-    last4: z.string().regex(/^\d{4}$/),
-    expMonth: z.number().int().min(1).max(12),
-    expYear: z.number().int().min(2024).max(2100),
-    holderName: NameSchema.optional(),
-    isDefault: z.boolean().optional(),
-  }),
+  z
+    .object({
+      type: z.literal('CARD'),
+      /** Stripe PaymentMethod id (from a SetupIntent) when Stripe is live; the server reads the card details from Stripe. */
+      stripePaymentMethodId: z.string().startsWith('pm_').optional(),
+      brand: z.string().trim().min(2).max(20).optional(),
+      last4: z.string().regex(/^\d{4}$/).optional(),
+      expMonth: z.number().int().min(1).max(12).optional(),
+      expYear: z.number().int().min(2024).max(2100).optional(),
+      holderName: NameSchema.optional(),
+      isDefault: z.boolean().optional(),
+    })
+    .refine((v) => Boolean(v.stripePaymentMethodId || (v.brand && v.last4 && v.expMonth && v.expYear)), {
+      message: 'Enter the card details',
+      path: ['last4'],
+    }),
   z.object({
     type: z.literal('PAYPAL'),
     email: EmailSchema,
