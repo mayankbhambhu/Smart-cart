@@ -1,0 +1,93 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import 'leaflet/dist/leaflet.css';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  --color-brand-50: #ecfdf3;
+  --color-brand-100: #d1fadf;
+  --color-brand-200: #a6f4c5;
+  --color-brand-300: #6ce9a6;
+  --color-brand-400: #32d583;
+  --color-brand-500: #12b76a;
+  --color-brand-600: #0a8f45;
+  --color-brand-700: #087a3a;
+  --color-brand-800: #05603a;
+  --color-brand-900: #054f31;
+
+  --color-accent-100: #fff6d6;
+  --color-accent-300: #ffd84d;
+  --color-accent-400: #ffc93c;
+  --color-accent-500: #f5b300;
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.08);
+  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.18), 0 4px 8px -4px rgb(16 24 40 / 0.08);
+
+  --animate-flash: flash 1.4s ease-out;
+  --animate-slide-in: slide-in 0.22s ease-out;
+  --animate-fade-in: fade-in 0.18s ease-out;
+
+  @keyframes flash {
+    0% {
+      background-color: rgb(255 201 60 / 0.55);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Route line on the in-store map */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.route-line {
+  stroke-dasharray: 6 6;
+  animation: dash 1s linear infinite;
+}
