@@ -1,4 +1,4 @@
-import { formatMoney, type CatalogProduct, type Paginated } from '@smartcart/shared';
+import { cleanSpokenQuery, formatMoney, type CatalogProduct, type Paginated } from '@smartcart/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Mic, MicOff, Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -9,7 +9,7 @@ import { cn, useDebounced } from '@/lib/utils';
 import { useVoiceInput } from '@/lib/voice';
 
 export function useProductSearch(storeId: string | null | undefined, q: string, limit = 6) {
-  const query = useDebounced(q.trim(), 200);
+  const query = useDebounced(cleanSpokenQuery(q), 200);
   return useQuery({
     queryKey: ['product-search', storeId, query, limit],
     queryFn: () => publicApi.get<Paginated<CatalogProduct>>('/catalog/products', { query: { storeId, q: query, limit } }),

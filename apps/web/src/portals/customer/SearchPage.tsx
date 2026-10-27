@@ -1,3 +1,4 @@
+import { cleanSpokenQuery } from '@smartcart/shared';
 import { useSearchParams } from 'react-router';
 import { ProductCard } from '@/components/product';
 import { EmptyState, Skeleton } from '@/components/ui';
@@ -7,8 +8,10 @@ import { useCustomerUi } from './ui-state';
 export default function SearchPage() {
   const [params] = useSearchParams();
   const q = params.get('q') ?? '';
+  // "Where is the peanut butter?" searches for "peanut butter".
+  const query = cleanSpokenQuery(q);
   const { store } = useCurrentStore();
-  const { data, isLoading } = useProducts({ storeId: store?.id, q, limit: 60 }, q.length > 0);
+  const { data, isLoading } = useProducts({ storeId: store?.id, q: query, limit: 60 }, query.length > 0);
   const openProduct = useCustomerUi((s) => s.openProduct);
   return (
     <div className="mx-auto max-w-7xl px-4 py-5">
