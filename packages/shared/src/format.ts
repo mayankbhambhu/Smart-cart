@@ -97,6 +97,18 @@ export function timeAgo(iso: string | Date, now: Date = new Date()): string {
   return then.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/** Turns a spoken or typed question ("Where is the peanut butter?") into a product search query. */
+export function cleanSpokenQuery(text: string): string {
+  return text
+    .trim()
+    .replace(
+      /^(where (is|are|can i find)( the)?|find( me)?( the)?|i (want|need)( to buy)?( some)?|show me( the)?|do you have( any)?)\s+/i,
+      '',
+    )
+    .replace(/[?.!]+$/, '')
+    .trim();
+}
+
 function trim(value: number): string {
   return (Math.round(value * 10) / 10).toString();
 }

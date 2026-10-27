@@ -1,3 +1,4 @@
+import { cleanSpokenQuery } from '@smartcart/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface SpeechRecognitionLike {
@@ -49,10 +50,7 @@ export function useVoiceInput(onText: (text: string) => void): {
     r.maxAlternatives = 1;
     r.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript ?? '';
-      const cleaned = transcript
-        .replace(/^(where (is|are)( the)?|find( me)?( the)?|i want( to buy)?|show me( the)?|do you have)\s+/i, '')
-        .replace(/[?.!]+$/, '')
-        .trim();
+      const cleaned = cleanSpokenQuery(transcript);
       if (cleaned) handler.current(cleaned);
     };
     r.onend = () => setListening(false);

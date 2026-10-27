@@ -135,6 +135,7 @@ export const router = createBrowserRouter([
       { path: 'audit', element: page(() => import('@/portals/admin/AuditPage')) },
     ],
   },
+  { path: '/pay/razorpay', element: page(() => import('@/portals/pay/RazorpayBridgePage')), errorElement: <RouteError /> },
   { path: '/devices', element: page(() => import('@/portals/devices/DevicesHome')), errorElement: <RouteError /> },
   { path: '/devices/gate', element: page(() => import('@/portals/devices/GateSimulator')) },
   { path: '/devices/cart', element: page(() => import('@/portals/devices/SmartCartSimulator')) },

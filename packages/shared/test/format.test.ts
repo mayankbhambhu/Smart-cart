@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, formatMoney, formatMoneyCompact, initials, normalizePhone } from '../src/format';
+import { cleanSpokenQuery, formatDuration, formatMoney, formatMoneyCompact, initials, normalizePhone } from '../src/format';
 import { PhoneSchema, PlaceOrderSchema, ReviewDecisionSchema } from '../src/schemas';
 
 describe('formatting', () => {
@@ -21,6 +21,13 @@ describe('formatting', () => {
     expect(normalizePhone('09876543210')).toBe('+919876543210');
     expect(normalizePhone('+1 (415) 555-0100')).toBe('+14155550100');
     expect(PhoneSchema.safeParse('12').success).toBe(false);
+  });
+
+  it('turns spoken questions into search queries', () => {
+    expect(cleanSpokenQuery('Where is the peanut butter?')).toBe('peanut butter');
+    expect(cleanSpokenQuery('I need some basmati rice.')).toBe('basmati rice');
+    expect(cleanSpokenQuery('do you have eggs')).toBe('eggs');
+    expect(cleanSpokenQuery('Amul butter')).toBe('Amul butter');
   });
 });
 
