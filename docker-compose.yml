@@ -1,0 +1,58 @@
+# Local SmartCart stack: PostgreSQL, the API and the web app (nginx).
+#
+#   docker compose up --build -d
+#   docker compose run --rm api node dist/scripts/seed.js   # demo data (wipes the database)
+#
+# Web app: http://localhost:8080 · API: http://localhost:4000 (the mobile app can point here).
+# This stack keeps demo payments and demo Google/Apple sign-in on; docs/DEPLOYMENT.md covers production.
+# Optional overrides (provider keys, JWT secret, ...) go in a .env file next to this one.
+name: smartcart
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smartcart
+      POSTGRES_PASSWORD: smartcart
+      POSTGRES_DB: smartcart
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U smartcart -d smartcart']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: smartcart-api:local
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://smartcart:smartcart@db:5432/smartcart
+      MIGRATE_ON_START: 'true'
+      PUBLIC_WEB_URL: http://localhost:8080
+      CORS_ORIGINS: http://localhost:8080,http://localhost:8081,http://localhost:19006
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - '4000:4000'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: smartcart-web:local
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '8080:80'
+
+volumes:
+  db-data:
