@@ -59,11 +59,6 @@ export default function LoginScreen() {
           />
         </View>
         <View style={{ marginTop: space.lg }}>{method === 'phone' ? <PhoneLogin onDone={done} /> : <EmailLogin onDone={done} />}</View>
-        <Row style={{ marginVertical: space.lg }}>
-          <View style={styles.rule} />
-          <Muted style={{ fontSize: 12 }}>or continue with</Muted>
-          <View style={styles.rule} />
-        </Row>
         <SocialButtons providers={providers} onDone={done} />
         <Muted style={{ textAlign: 'center', fontSize: 12, marginTop: space.xl }}>
           Demo account: priya@example.com / Customer@123, or phone 99000 00001 (the code is shown in development).
@@ -322,18 +317,28 @@ function SocialButtons({ providers, onDone }: { providers?: AuthProvidersInfo; o
     }
   };
 
-  const showApple = appleNative || providers?.apple.demo;
+  // Google goes through the web client; Apple is native on iOS. Each also has the demo stand-in.
+  const showGoogle = Boolean(providers?.google.demo || (providers?.google.enabled && providers.google.webClientId));
+  const showApple = Boolean(providers?.apple.demo || (providers?.apple.enabled && appleNative));
+  if (!showGoogle && !showApple) return null;
   return (
     <View style={{ gap: space.md }}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => void google()}
-        disabled={busy !== null}
-        style={({ pressed }) => [styles.social, pressed && { opacity: 0.8 }]}
-      >
-        <Text style={{ fontSize: 20, fontWeight: '900', color: '#4285F4' }}>G</Text>
-        <Text style={styles.socialText}>{busy === 'google' ? 'Opening Google…' : 'Continue with Google'}</Text>
-      </Pressable>
+      <Row style={{ marginTop: space.lg, marginBottom: space.sm }}>
+        <View style={styles.rule} />
+        <Muted style={{ fontSize: 12 }}>or continue with</Muted>
+        <View style={styles.rule} />
+      </Row>
+      {showGoogle && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void google()}
+          disabled={busy !== null}
+          style={({ pressed }) => [styles.social, pressed && { opacity: 0.8 }]}
+        >
+          <Text style={{ fontSize: 20, fontWeight: '900', color: '#4285F4' }}>G</Text>
+          <Text style={styles.socialText}>{busy === 'google' ? 'Opening Google…' : 'Continue with Google'}</Text>
+        </Pressable>
+      )}
       {showApple &&
         (appleNative && !providers?.apple.demo ? (
           <AppleAuthentication.AppleAuthenticationButton

@@ -4,9 +4,11 @@ import { Mail, Phone } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Logo } from '@/components/brand';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { Button, Card, Field, Input, Modal, Segmented } from '@/components/ui';
 import { ApiError, customerApi, errorMessage, publicApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { SignInCancelled, signInWithAppleWeb } from '@/lib/identity';
 import { nextPath } from '@/lib/session';
 import { useShop } from '@/lib/stores';
 import { toast } from '@/lib/toast';
@@ -60,9 +62,6 @@ export default function LoginPage() {
           ]}
         />
         <div className="mt-5">{method === 'phone' ? <PhoneLogin onDone={done} /> : <EmailLogin onDone={done} />}</div>
-        <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
-          <span className="h-px flex-1 bg-slate-200" /> or continue with <span className="h-px flex-1 bg-slate-200" />
-        </div>
         <SocialButtons providers={providers} onDone={done} />
       </Card>
       <p className="mt-6 text-center text-xs text-slate-500">
@@ -239,27 +238,63 @@ function EmailLogin({ onDone }: { onDone: (session: AuthSession) => void }) {
   );
 }
 
+/**
+ * Google Identity Services and Sign in with Apple JS when the server has the
+ * OAuth clients configured (docs/AUTH.md); a simulated consent screen in demo mode.
+ */
 function SocialButtons({ providers, onDone }: { providers?: AuthProvidersInfo; onDone: (session: AuthSession) => void }) {
   const [demo, setDemo] = useState<'google' | 'apple' | null>(null);
   const [form, setForm] = useState({ name: '', email: '' });
   const [busy, setBusy] = useState(false);
-  const start = (provider: 'google' | 'apple') => {
-    const info = providers?.[provider];
-    if (!info?.enabled) return toast.error(`${provider === 'google' ? 'Google' : 'Apple'} sign-in is not configured`);
-    if (info.demo) return setDemo(provider);
-    toast.info(
-      'Configure the OAuth client to enable real sign-in',
-      'See docs/AUTH.md for Google Identity Services and Sign in with Apple JS.',
-    );
+  const [appleBusy, setAppleBusy] = useState(false);
+  const googleClientId = providers?.google.enabled && !providers.google.demo ? providers.google.webClientId : null;
+  const appleWeb =
+    providers?.apple.enabled && !providers.apple.demo && providers.apple.serviceId && providers.apple.redirectUri
+      ? { serviceId: providers.apple.serviceId, redirectUri: providers.apple.redirectUri }
+      : null;
+  const showGoogle = Boolean(googleClientId) || Boolean(providers?.google.demo);
+  const showApple = Boolean(appleWeb) || Boolean(providers?.apple.demo);
+  if (!showGoogle && !showApple) return null;
+
+  const google = async (idToken: string) => {
+    try {
+      onDone(await publicApi.post<AuthSession>('/auth/google', { idToken }));
+    } catch (err) {
+      toast.error('Google sign-in failed', errorMessage(err));
+    }
   };
+  const apple = async () => {
+    if (!appleWeb) return setDemo('apple');
+    setAppleBusy(true);
+    try {
+      const result = await signInWithAppleWeb(appleWeb.serviceId, appleWeb.redirectUri);
+      onDone(await publicApi.post<AuthSession>('/auth/apple', result));
+    } catch (err) {
+      if (!(err instanceof SignInCancelled)) toast.error('Sign in with Apple failed', errorMessage(err));
+    } finally {
+      setAppleBusy(false);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Button variant="outline" size="lg" onClick={() => start('google')}>
-        <span className="text-lg font-black text-[#4285F4]">G</span> Google
-      </Button>
-      <Button variant="dark" size="lg" onClick={() => start('apple')}>
-        Apple
-      </Button>
+    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="flex items-center gap-3 text-xs text-slate-400 sm:col-span-2">
+        <span className="h-px flex-1 bg-slate-200" /> or continue with <span className="h-px flex-1 bg-slate-200" />
+      </div>
+      {googleClientId ? (
+        <GoogleSignInButton clientId={googleClientId} onCredential={(idToken) => void google(idToken)} />
+      ) : (
+        showGoogle && (
+          <Button variant="outline" size="lg" onClick={() => setDemo('google')}>
+            <span className="text-lg font-black text-[#4285F4]">G</span> Google
+          </Button>
+        )
+      )}
+      {showApple && (
+        <Button variant="dark" size="lg" loading={appleBusy} onClick={() => void apple()}>
+          Apple
+        </Button>
+      )}
       <Modal
         open={Boolean(demo)}
         onClose={() => setDemo(null)}

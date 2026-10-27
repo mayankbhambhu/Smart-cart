@@ -5,6 +5,7 @@ import { CheckCircle2, CreditCard, Fingerprint, Loader2, ShieldCheck, Smartphone
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
 import { customerApi, errorMessage } from '@/lib/api';
+import { loadScript } from '@/lib/scripts';
 import { cn } from '@/lib/utils';
 
 type Resolver = (order: Order | null) => void;
@@ -16,17 +17,6 @@ declare global {
 }
 
 const stripePromises = new Map<string, Promise<Stripe | null>>();
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Could not load ${src}`));
-    document.head.appendChild(script);
-  });
-}
 
 /**
  * Runs the payment step for a checkout. Resolves with the paid order, or
