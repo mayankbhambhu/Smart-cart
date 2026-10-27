@@ -573,7 +573,15 @@ export async function clockIn(
     if (!input.kioskCode || !verifyKioskCode(store!.kioskSecret, input.kioskCode)) {
       throw new AppError(400, 'KIOSK_CODE_INVALID', 'That kiosk code has expired. Scan the QR at the staff entrance again.');
     }
-  } else if (input.method === 'APP' && settings.geofenceMeters > 0 && input.lat !== undefined && input.lng !== undefined) {
+  } else if (input.method === 'APP' && settings.geofenceMeters > 0) {
+    // Without a location the geofence cannot be checked, so the app must share one (or use the kiosk).
+    if (input.lat === undefined || input.lng === undefined) {
+      throw new AppError(
+        400,
+        'LOCATION_REQUIRED',
+        'Share your location to clock in from the app, or scan the kiosk QR at the staff entrance.',
+      );
+    }
     const meters = haversineKm({ lat: input.lat, lng: input.lng }, store!) * 1000;
     if (meters > settings.geofenceMeters) {
       throw new AppError(

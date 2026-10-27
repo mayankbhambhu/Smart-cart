@@ -148,18 +148,30 @@ describe('shifts and attendance', () => {
     await db.delete(attendanceRecords).where(and(eq(attendanceRecords.employeeId, record.id), isNull(attendanceRecords.clockOutAt)));
 
     const store = await storeByCode('BLR-IND-01');
-    await api()
+    const away = await api()
       .post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`)
       .set(bearer(worker))
       .send({ method: 'APP', lat: store.lat + 0.05, lng: store.lng })
       .expect(400);
+    expect(away.body.error.code).toBe('OUTSIDE_STORE');
+    // The geofence cannot be skipped by withholding the location.
+    const hidden = await api()
+      .post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`)
+      .set(bearer(worker))
+      .send({ method: 'APP' })
+      .expect(400);
+    expect(hidden.body.error.code).toBe('LOCATION_REQUIRED');
     const clockedIn = await api()
       .post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`)
       .set(bearer(worker))
       .send({ method: 'APP', lat: store.lat, lng: store.lng })
       .expect(201);
     expect(clockedIn.body.clockOutAt).toBeNull();
-    await api().post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`).set(bearer(worker)).send({ method: 'APP' }).expect(409);
+    await api()
+      .post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`)
+      .set(bearer(worker))
+      .send({ method: 'APP', lat: store.lat, lng: store.lng })
+      .expect(409);
 
     const me = await api().get(`/api/v1/ops/stores/${storeId}/attendance/me`).set(bearer(worker)).expect(200);
     expect((me.body as MyAttendance).open?.id).toBe(clockedIn.body.id);
