@@ -88,7 +88,9 @@ const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 function loadEnv(): Env {
-  const parsed = EnvSchema.safeParse(process.env);
+  // Blank lines copied from .env.example (`KEY=`) mean "not set", so defaults apply.
+  const source = Object.fromEntries(Object.entries(process.env).filter(([, value]) => value !== ''));
+  const parsed = EnvSchema.safeParse(source);
   if (!parsed.success) {
     const problems = parsed.error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`).join('\n');
     throw new Error(`Invalid environment configuration:\n${problems}`);
