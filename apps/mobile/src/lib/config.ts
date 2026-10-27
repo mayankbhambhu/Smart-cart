@@ -6,7 +6,7 @@ function devHost(): string | null {
   return hostUri ? (hostUri.split(':')[0] ?? null) : null;
 }
 
-const extra = (Constants.expoConfig?.extra ?? {}) as { apiUrl?: string; webUrl?: string };
+const extra = (Constants.expoConfig?.extra ?? {}) as { apiUrl?: string; webUrl?: string; stripeMerchantId?: string };
 const host = devHost();
 
 export const API_URL = (
@@ -19,3 +19,6 @@ export const WEB_URL = (
   extra.webUrl ??
   (host ? `http://${host}:5173` : 'http://localhost:5173')
 ).replace(/\/$/, '');
+
+/** Apple Pay merchant ID registered with Stripe (STRIPE_MERCHANT_ID at build time). */
+export const STRIPE_MERCHANT_ID = extra.stripeMerchantId ?? 'merchant.dev.smartcart';

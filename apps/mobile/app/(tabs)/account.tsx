@@ -39,6 +39,7 @@ import {
 } from '@/components/ui';
 import { ApiError, customerApi, errorMessage, logout } from '@/lib/api';
 import { useAuth, useSession } from '@/lib/auth';
+import { STRIPE_MERCHANT_ID } from '@/lib/config';
 import { useAddresses, usePaymentsConfig, useProfile, useSavedMethods, useStores } from '@/lib/hooks';
 import { toast } from '@/lib/toast';
 
@@ -486,7 +487,7 @@ function AddMethod({ onSaved }: { onSaved: () => void }) {
       if (stripeLive) {
         // Card details go straight to Stripe in its PaymentSheet; we only keep the payment method id.
         const setup = await customerApi.post<{ clientSecret: string; publishableKey: string }>('/me/payment-methods/stripe-setup');
-        await initStripe({ publishableKey: setup.publishableKey, merchantIdentifier: 'merchant.dev.smartcart', urlScheme: 'smartcart' });
+        await initStripe({ publishableKey: setup.publishableKey, merchantIdentifier: STRIPE_MERCHANT_ID, urlScheme: 'smartcart' });
         const init = await initPaymentSheet({
           setupIntentClientSecret: setup.clientSecret,
           merchantDisplayName: config?.merchantDisplayName ?? 'SmartCart',

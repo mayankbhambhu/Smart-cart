@@ -7,7 +7,7 @@ import { ActivityIndicator, Modal, Platform, StyleSheet, Text, TextInput, View }
 import { Button } from '@/components/ui';
 import { colors, radius } from '@/components/theme';
 import { customerApi, errorMessage } from './api';
-import { WEB_URL } from './config';
+import { STRIPE_MERCHANT_ID, WEB_URL } from './config';
 
 type Resolver = (order: Order | null) => void;
 
@@ -46,7 +46,7 @@ export function usePayment(): { pay: (checkout: CheckoutResult) => Promise<Order
       case 'cash':
         return checkout.order;
       case 'stripe': {
-        await initStripe({ publishableKey: action.publishableKey, merchantIdentifier: 'merchant.dev.smartcart', urlScheme: 'smartcart' });
+        await initStripe({ publishableKey: action.publishableKey, merchantIdentifier: STRIPE_MERCHANT_ID, urlScheme: 'smartcart' });
         const init = await initPaymentSheet({
           paymentIntentClientSecret: action.clientSecret,
           merchantDisplayName: action.merchantDisplayName,

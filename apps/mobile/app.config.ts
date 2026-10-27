@@ -1,5 +1,8 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
+/** Apple Pay merchant ID, used by the Stripe config plugin at build time and by the app at run time. */
+const STRIPE_MERCHANT_ID = process.env.STRIPE_MERCHANT_ID ?? 'merchant.dev.smartcart';
+
 /**
  * EXPO_PUBLIC_API_URL points the app at the SmartCart API. In development it
  * defaults to the machine running `expo start` (port 4000).
@@ -43,15 +46,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       { locationWhenInUsePermission: 'SmartCart uses your location to find nearby stores and to confirm staff clock-ins.' },
     ],
     ['expo-notifications', { color: '#0a8f45' }],
-    [
-      '@stripe/stripe-react-native',
-      { merchantIdentifier: process.env.STRIPE_MERCHANT_ID ?? 'merchant.dev.smartcart', enableGooglePay: true },
-    ],
+    ['@stripe/stripe-react-native', { merchantIdentifier: STRIPE_MERCHANT_ID, enableGooglePay: true }],
   ],
   experiments: { typedRoutes: false },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     webUrl: process.env.EXPO_PUBLIC_WEB_URL,
+    stripeMerchantId: STRIPE_MERCHANT_ID,
     eas: process.env.EAS_PROJECT_ID ? { projectId: process.env.EAS_PROJECT_ID } : undefined,
   },
 });
