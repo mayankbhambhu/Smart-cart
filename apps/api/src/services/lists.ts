@@ -190,12 +190,7 @@ export async function loadList(listId: string, storeId: string | null): Promise<
   const members = (await listMembersOf(db, [listId])).get(listId) ?? [];
   const estimatedTotal = items.reduce((sum, item) => sum + (item.product ? item.product.price * item.quantity : 0), 0);
   return {
-    ...summaryOf(
-      list,
-      items.length,
-      items.filter((i) => i.isChecked).length,
-      members,
-    ),
+    ...summaryOf(list, items.length, items.filter((i) => i.isChecked).length, members),
     shareCode: list.shareCode,
     items,
     estimatedTotal,
@@ -238,6 +233,7 @@ export async function publishListChange(
     ...(action === 'LIST_DELETED' ? {} : { list: await summaryFor(listId) }),
   };
   const recipients =
-    memberIds ?? (await db.select({ userId: listMembers.userId }).from(listMembers).where(eq(listMembers.listId, listId))).map((m) => m.userId);
+    memberIds ??
+    (await db.select({ userId: listMembers.userId }).from(listMembers).where(eq(listMembers.listId, listId))).map((m) => m.userId);
   broadcast.toRooms([rooms.list(listId), ...recipients.map(rooms.user)], SocketEvents.LIST_UPDATED, event);
 }

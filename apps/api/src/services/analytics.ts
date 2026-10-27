@@ -114,7 +114,8 @@ export async function summary(range: Range): Promise<AnalyticsSummary> {
     itemsSold: current.items,
     uniqueCustomers,
     newCustomers,
-    repeatCustomerRate: uniqueCustomers > 0 ? round(((uniqueCustomers - Math.min(newCustomers, uniqueCustomers)) / uniqueCustomers) * 100) : 0,
+    repeatCustomerRate:
+      uniqueCustomers > 0 ? round(((uniqueCustomers - Math.min(newCustomers, uniqueCustomers)) / uniqueCustomers) * 100) : 0,
     cancelledOrders: cancelled[0]?.count ?? 0,
     byChannel,
     previous: {
@@ -325,7 +326,12 @@ export async function paymentMix(range: Range): Promise<PaymentMix[]> {
     from orders o where ${salesWhere(range)} and o.payment_method is not null
     group by 1 order by orders desc`);
   const total = data.reduce((sum, d) => sum + d.orders, 0);
-  return data.map((d) => ({ method: d.method, orders: d.orders, amount: d.amount, share: total > 0 ? round((d.orders / total) * 100) : 0 }));
+  return data.map((d) => ({
+    method: d.method,
+    orders: d.orders,
+    amount: d.amount,
+    share: total > 0 ? round((d.orders / total) * 100) : 0,
+  }));
 }
 
 export async function inventoryHealth(storeId: string): Promise<InventoryHealth> {
@@ -389,7 +395,14 @@ export async function inventoryHealth(storeId: string): Promise<InventoryHealth>
       .filter((v) => v.stock > 0 && v.sold <= 3)
       .sort((a, b) => b.stock_value - a.stock_value)
       .slice(0, 10)
-      .map((v) => ({ productId: v.product_id, name: v.name, emoji: v.emoji, stock: v.stock, unitsSold: v.sold, stockValue: v.stock_value })),
+      .map((v) => ({
+        productId: v.product_id,
+        name: v.name,
+        emoji: v.emoji,
+        stock: v.stock,
+        unitsSold: v.sold,
+        stockValue: v.stock_value,
+      })),
   };
 }
 
@@ -532,7 +545,11 @@ export async function dailyCsv(range: Range): Promise<string> {
   const rupees = (minor: number) => (minor / 100).toFixed(2);
   const lines = ['date,orders,gross_sales,discounts,net_sales,cogs,gross_profit,gst_included'];
   for (const d of data) {
-    lines.push([d.day, d.orders, rupees(d.gross), rupees(d.discounts), rupees(d.net), rupees(d.cogs), rupees(d.net - d.cogs), rupees(d.tax)].join(','));
+    lines.push(
+      [d.day, d.orders, rupees(d.gross), rupees(d.discounts), rupees(d.net), rupees(d.cogs), rupees(d.net - d.cogs), rupees(d.tax)].join(
+        ',',
+      ),
+    );
   }
   return lines.join('\n');
 }

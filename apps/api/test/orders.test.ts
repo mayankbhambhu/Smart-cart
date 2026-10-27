@@ -73,7 +73,15 @@ describe('delivery orders', () => {
     const address = await api()
       .post('/api/v1/me/addresses')
       .set(bearer(customer))
-      .send({ label: 'HOME', line1: '12, Lake View Road', city: 'Bengaluru', state: 'Karnataka', pincode: '560038', lat: 12.974, lng: 77.64 })
+      .send({
+        label: 'HOME',
+        line1: '12, Lake View Road',
+        city: 'Bengaluru',
+        state: 'Karnataka',
+        pincode: '560038',
+        lat: 12.974,
+        lng: 77.64,
+      })
       .expect(201);
     const paneer = await findProduct(storeId, 'Fresh Paneer');
     const manager = await staffSession('kavya.reddy');
@@ -101,14 +109,22 @@ describe('delivery orders', () => {
     const reserved = await shelfOf(bearer(manager), 'Amul Fresh Paneer');
     expect(reserved.shelfQty + reserved.storageQty).toBe(before.shelfQty + before.storageQty - 3);
 
-    const paid = await api().post(`/api/v1/payments/${checkout.payment.id}/demo`).set(bearer(customer)).send({ outcome: 'success' }).expect(200);
+    const paid = await api()
+      .post(`/api/v1/payments/${checkout.payment.id}/demo`)
+      .set(bearer(customer))
+      .send({ outcome: 'success' })
+      .expect(200);
     expect(paid.body.order).toMatchObject({ status: 'PLACED', paymentStatus: 'PAID' });
 
     const orderId = checkout.order.id;
     const board = await api().get(`/api/v1/ops/stores/${storeId}/orders`).query({ status: 'PLACED' }).set(bearer(manager)).expect(200);
     expect((board.body as Order[]).some((o) => o.id === orderId)).toBe(true);
 
-    await api().post(`/api/v1/ops/stores/${storeId}/orders/${orderId}/status`).set(bearer(manager)).send({ status: 'DELIVERED' }).expect(409);
+    await api()
+      .post(`/api/v1/ops/stores/${storeId}/orders/${orderId}/status`)
+      .set(bearer(manager))
+      .send({ status: 'DELIVERED' })
+      .expect(409);
     await api().post(`/api/v1/ops/stores/${storeId}/orders/${orderId}/status`).set(bearer(manager)).send({ status: 'PACKING' }).expect(200);
     await api()
       .post(`/api/v1/ops/stores/${storeId}/orders/${orderId}/status`)
@@ -148,7 +164,14 @@ describe('delivery orders', () => {
       .send({ label: 'HOME', line1: '7, MG Road', city: 'Bengaluru', state: 'Karnataka', pincode: '560038', lat: 12.972, lng: 77.641 })
       .expect(201);
     const eggs = await findProduct(storeId, 'Farm Fresh Eggs');
-    const body = { storeId, channel: 'DELIVERY', items: [{ productId: eggs.id, quantity: 1 }], addressId: address.body.id, paymentMethod: 'CASH_ON_DELIVERY', idempotencyKey: 'same-key-123' };
+    const body = {
+      storeId,
+      channel: 'DELIVERY',
+      items: [{ productId: eggs.id, quantity: 1 }],
+      addressId: address.body.id,
+      paymentMethod: 'CASH_ON_DELIVERY',
+      idempotencyKey: 'same-key-123',
+    };
     const first = await api().post('/api/v1/orders').set(bearer(customer)).send(body).expect(201);
     const second = await api().post('/api/v1/orders').set(bearer(customer)).send(body).expect(201);
     expect(second.body.order.id).toBe(first.body.order.id);
@@ -160,13 +183,27 @@ describe('delivery orders', () => {
     const address = await api()
       .post('/api/v1/me/addresses')
       .set(bearer(customer))
-      .send({ label: 'HOME', line1: 'Somewhere in Mysuru', city: 'Mysuru', state: 'Karnataka', pincode: '570001', lat: 12.2958, lng: 76.6394 })
+      .send({
+        label: 'HOME',
+        line1: 'Somewhere in Mysuru',
+        city: 'Mysuru',
+        state: 'Karnataka',
+        pincode: '570001',
+        lat: 12.2958,
+        lng: 76.6394,
+      })
       .expect(201);
     const eggs = await findProduct(storeId, 'Farm Fresh Eggs');
     const res = await api()
       .post('/api/v1/orders')
       .set(bearer(customer))
-      .send({ storeId, channel: 'DELIVERY', items: [{ productId: eggs.id, quantity: 1 }], addressId: address.body.id, paymentMethod: 'UPI' })
+      .send({
+        storeId,
+        channel: 'DELIVERY',
+        items: [{ productId: eggs.id, quantity: 1 }],
+        addressId: address.body.id,
+        paymentMethod: 'UPI',
+      })
       .expect(422);
     expect(res.body.error.code).toBe('OUT_OF_DELIVERY_AREA');
   });
@@ -184,10 +221,20 @@ describe('delivery orders', () => {
     const placed = await api()
       .post('/api/v1/orders')
       .set(bearer(customer))
-      .send({ storeId, channel: 'DELIVERY', items: [{ productId: butter.id, quantity: 2 }], addressId: address.body.id, paymentMethod: 'CARD' })
+      .send({
+        storeId,
+        channel: 'DELIVERY',
+        items: [{ productId: butter.id, quantity: 2 }],
+        addressId: address.body.id,
+        paymentMethod: 'CARD',
+      })
       .expect(201);
     await api().post(`/api/v1/payments/${placed.body.payment.id}/demo`).set(bearer(customer)).send({}).expect(200);
-    const cancelled = await api().post(`/api/v1/orders/${placed.body.order.id}/cancel`).set(bearer(customer)).send({ reason: 'Ordered by mistake' }).expect(200);
+    const cancelled = await api()
+      .post(`/api/v1/orders/${placed.body.order.id}/cancel`)
+      .set(bearer(customer))
+      .send({ reason: 'Ordered by mistake' })
+      .expect(200);
     expect(cancelled.body).toMatchObject({ status: 'CANCELLED', paymentStatus: 'REFUNDED' });
     const after = await shelfOf(bearer(manager), 'Amul Salted Butter');
     expect(after.shelfQty + after.storageQty).toBe(before.shelfQty + before.storageQty);
@@ -204,7 +251,13 @@ describe('scheduled pickup', () => {
     const placed = await api()
       .post('/api/v1/orders')
       .set(bearer(customer))
-      .send({ storeId, channel: 'PICKUP', items: [{ productId: atta.id, quantity: 1 }], pickupSlotStart: slot.start, paymentMethod: 'GOOGLE_PAY' })
+      .send({
+        storeId,
+        channel: 'PICKUP',
+        items: [{ productId: atta.id, quantity: 1 }],
+        pickupSlotStart: slot.start,
+        paymentMethod: 'GOOGLE_PAY',
+      })
       .expect(201);
     const paid = await api().post(`/api/v1/payments/${placed.body.payment.id}/demo`).set(bearer(customer)).send({}).expect(200);
     const order = paid.body.order as Order;

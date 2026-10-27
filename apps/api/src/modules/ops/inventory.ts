@@ -39,7 +39,8 @@ opsInventoryRouter.get('/inventory', async (req, res) => {
     const like = `%${query.q}%`;
     conditions.push(or(ilike(products.name, like), ilike(products.brand, like), ilike(products.sku, like), eq(products.barcode, query.q))!);
   }
-  if (query.status === 'LOW') conditions.push(sql`${storeProducts.shelfQty} <= ${storeProducts.reorderThreshold} and ${storeProducts.shelfQty} > 0`);
+  if (query.status === 'LOW')
+    conditions.push(sql`${storeProducts.shelfQty} <= ${storeProducts.reorderThreshold} and ${storeProducts.shelfQty} > 0`);
   if (query.status === 'OUT') conditions.push(sql`${storeProducts.shelfQty} = 0`);
   if (query.status === 'OK') conditions.push(sql`${storeProducts.shelfQty} > ${storeProducts.reorderThreshold}`);
 
@@ -59,7 +60,9 @@ opsInventoryRouter.get('/inventory', async (req, res) => {
       sp: storeProducts,
       product: products,
       categoryName: categories.name,
-      openAlertId: sql<string | null>`(select a.id from ${restockAlerts} a where a.store_product_id = ${storeProducts.id} and a.status in ('OPEN', 'ACKNOWLEDGED') limit 1)`,
+      openAlertId: sql<
+        string | null
+      >`(select a.id from ${restockAlerts} a where a.store_product_id = ${storeProducts.id} and a.status in ('OPEN', 'ACKNOWLEDGED') limit 1)`,
       total: sql<number>`count(*) over()::int`,
     })
     .from(storeProducts)
@@ -133,7 +136,11 @@ opsInventoryRouter.patch('/inventory/:storeProductId', async (req, res) => {
   await transaction(async (tx, afterCommit) => {
     await tx.update(storeProducts).set(input).where(eq(storeProducts.id, sp.id));
     // Re-evaluate the restock alert when the threshold changes.
-    await changeStock(tx, { storeProductId: sp.id, type: 'ADJUSTMENT', actorId: req.auth!.userId, note: 'Product settings updated' }, afterCommit);
+    await changeStock(
+      tx,
+      { storeProductId: sp.id, type: 'ADJUSTMENT', actorId: req.auth!.userId, note: 'Product settings updated' },
+      afterCommit,
+    );
   });
   res.json({ ok: true });
 });
@@ -156,7 +163,8 @@ opsInventoryRouter.post('/inventory/:storeProductId/restock', async (req, res) =
 
 /** Supplier delivery received into storage. */
 opsInventoryRouter.post('/inventory/:storeProductId/receive', async (req, res) => {
-  if (!atLeast(req, 'FLOOR_MANAGER') && req.staff!.department !== 'WAREHOUSE') throw forbidden('Only warehouse staff and managers can receive stock');
+  if (!atLeast(req, 'FLOOR_MANAGER') && req.staff!.department !== 'WAREHOUSE')
+    throw forbidden('Only warehouse staff and managers can receive stock');
   const storeProductId = parse(IdSchema, req.params.storeProductId);
   const { quantity, note } = parse(ReceiveStockSchema, req.body);
   const sp = await ownStoreProduct(req.staff!.storeId, storeProductId);
@@ -295,6 +303,9 @@ opsInventoryRouter.post('/alerts/:alertId/task', async (req, res) => {
     aisle: alert.location.aisle,
     restockAlertId: alert.id,
   });
-  await db.update(restockAlerts).set({ taskId: task.id, status: 'ACKNOWLEDGED', acknowledgedById: req.auth!.userId, acknowledgedAt: new Date() }).where(eq(restockAlerts.id, alertId));
+  await db
+    .update(restockAlerts)
+    .set({ taskId: task.id, status: 'ACKNOWLEDGED', acknowledgedById: req.auth!.userId, acknowledgedAt: new Date() })
+    .where(eq(restockAlerts.id, alertId));
   res.status(201).json(task);
 });

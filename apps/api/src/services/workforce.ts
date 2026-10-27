@@ -112,7 +112,9 @@ export async function listTasks(
   const isWorker = actor.role === 'WORKER';
   if (filter.scope === 'mine' || isWorker) conditions.push(eq(tasks.assigneeId, actor.employeeId));
   else if (filter.scope === 'team' && actor.role === 'FLOOR_MANAGER') {
-    conditions.push(or(eq(tasks.assignedById, actor.employeeId), eq(tasks.assigneeId, actor.employeeId), eq(assignee.reportsToId, actor.employeeId))!);
+    conditions.push(
+      or(eq(tasks.assignedById, actor.employeeId), eq(tasks.assigneeId, actor.employeeId), eq(assignee.reportsToId, actor.employeeId))!,
+    );
   }
   if (filter.assigneeId && !isWorker) conditions.push(eq(tasks.assigneeId, filter.assigneeId));
   if (filter.statuses.length > 0) conditions.push(inArray(tasks.status, filter.statuses));
@@ -172,9 +174,16 @@ export async function createTask(actor: StaffActor, input: CreateTaskInput): Pro
         {
           type: 'TASK_ASSIGNED',
           title: `New task from ${actor.name}: ${task!.title}`,
-          body: [input.priority === 'URGENT' ? 'Urgent' : null, input.aisle ? `Aisle ${input.aisle}` : null, input.dueAt ? `due ${new Date(input.dueAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: actor.timezone })}` : null]
-            .filter(Boolean)
-            .join(' · ') || 'Open your task list for details',
+          body:
+            [
+              input.priority === 'URGENT' ? 'Urgent' : null,
+              input.aisle ? `Aisle ${input.aisle}` : null,
+              input.dueAt
+                ? `due ${new Date(input.dueAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: actor.timezone })}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ') || 'Open your task list for details',
           data: { taskId: task!.id, storeId: actor.storeId },
         },
         afterCommit,
@@ -187,7 +196,11 @@ export async function createTask(actor: StaffActor, input: CreateTaskInput): Pro
 }
 
 export async function updateTask(actor: StaffActor, taskId: string, input: UpdateTaskInput): Promise<Task> {
-  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId))).limit(1);
+  const [task] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId)))
+    .limit(1);
   if (!task) throw notFound('Task');
   const isManager = actor.role === 'OWNER' || actor.role === 'STORE_MANAGER';
   if (!isManager && task.assignedById !== actor.employeeId) throw forbidden('Only the person who assigned this task can change it');
@@ -210,11 +223,18 @@ export async function updateTask(actor: StaffActor, taskId: string, input: Updat
 }
 
 export async function startTask(actor: StaffActor, taskId: string): Promise<Task> {
-  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId))).limit(1);
+  const [task] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId)))
+    .limit(1);
   if (!task) throw notFound('Task');
   if (task.assigneeId !== actor.employeeId) throw forbidden('Only the assignee can start this task');
   if (task.status !== 'TODO' && task.status !== 'REOPENED') throw conflict('This task has already been started');
-  await db.update(tasks).set({ status: 'IN_PROGRESS', startedAt: task.startedAt ?? new Date() }).where(eq(tasks.id, taskId));
+  await db
+    .update(tasks)
+    .set({ status: 'IN_PROGRESS', startedAt: task.startedAt ?? new Date() })
+    .where(eq(tasks.id, taskId));
   broadcast.toStoreOps(actor.storeId, SocketEvents.TASK_CHANGED, { taskId });
   return loadTask(db, taskId);
 }
@@ -222,20 +242,35 @@ export async function startTask(actor: StaffActor, taskId: string): Promise<Task
 /** The assignee marks the work done and leaves a remark for the manager. */
 export async function completeTask(actor: StaffActor, taskId: string, input: CompleteTaskInput): Promise<Task> {
   await transaction(async (tx, afterCommit) => {
-    const [task] = await tx.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId))).for('update');
+    const [task] = await tx
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId)))
+      .for('update');
     if (!task) throw notFound('Task');
     if (task.assigneeId !== actor.employeeId) throw forbidden('Only the assignee can complete this task');
     if (!OPEN_TASK_STATUSES.includes(task.status)) throw conflict('This task is not open');
     const now = new Date();
     await tx
       .update(tasks)
-      .set({ status: 'DONE', startedAt: task.startedAt ?? now, completedAt: now, completionNote: input.note, completionPhotoUrl: input.photoUrl ?? null })
+      .set({
+        status: 'DONE',
+        startedAt: task.startedAt ?? now,
+        completedAt: now,
+        completionNote: input.note,
+        completionPhotoUrl: input.photoUrl ?? null,
+      })
       .where(eq(tasks.id, taskId));
     const [assignedBy] = await tx.select({ userId: employees.userId }).from(employees).where(eq(employees.id, task.assignedById)).limit(1);
     await notifyUsers(
       tx,
       [assignedBy?.userId],
-      { type: 'TASK_COMPLETED', title: `${actor.name} completed "${task.title}"`, body: input.note, data: { taskId, storeId: actor.storeId } },
+      {
+        type: 'TASK_COMPLETED',
+        title: `${actor.name} completed "${task.title}"`,
+        body: input.note,
+        data: { taskId, storeId: actor.storeId },
+      },
       afterCommit,
     );
     afterCommit(() => broadcast.toStoreOps(actor.storeId, SocketEvents.TASK_CHANGED, { taskId }));
@@ -246,7 +281,11 @@ export async function completeTask(actor: StaffActor, taskId: string, input: Com
 /** Manager reviews completed work: approve with a rating, or reopen with feedback. */
 export async function reviewTask(actor: StaffActor, taskId: string, input: ReviewTaskInput): Promise<Task> {
   await transaction(async (tx, afterCommit) => {
-    const [task] = await tx.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId))).for('update');
+    const [task] = await tx
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.storeId, actor.storeId)))
+      .for('update');
     if (!task) throw notFound('Task');
     const isManager = actor.role === 'OWNER' || actor.role === 'STORE_MANAGER';
     if (!isManager && task.assignedById !== actor.employeeId) throw forbidden('Only the person who assigned this task can review it');
@@ -283,7 +322,13 @@ export async function reviewTask(actor: StaffActor, taskId: string, input: Revie
 // Shifts
 // ---------------------------------------------------------------------------
 
-function employeeRef(e: { id: string; fullName: string; role: StaffRole; department: EmployeeRef['department']; employeeCode: string }): EmployeeRef {
+function employeeRef(e: {
+  id: string;
+  fullName: string;
+  role: StaffRole;
+  department: EmployeeRef['department'];
+  employeeCode: string;
+}): EmployeeRef {
   return { id: e.id, name: e.fullName, role: e.role, department: e.department, employeeCode: e.employeeCode };
 }
 
@@ -320,7 +365,12 @@ export async function listShifts(storeId: string, from: string, to: string, empl
       notes: shift.notes,
       status: shift.status,
       attendance: record
-        ? { id: record.id, clockInAt: record.clockInAt.toISOString(), clockOutAt: record.clockOutAt?.toISOString() ?? null, lateByMinutes: record.lateByMinutes }
+        ? {
+            id: record.id,
+            clockInAt: record.clockInAt.toISOString(),
+            clockOutAt: record.clockOutAt?.toISOString() ?? null,
+            lateByMinutes: record.lateByMinutes,
+          }
         : null,
     };
   });
@@ -397,7 +447,11 @@ export async function createShifts(actor: StaffActor, input: CreateShiftsInput):
 
 export async function updateShift(actor: StaffActor, shiftId: string, input: UpdateShiftInput): Promise<Shift> {
   if (actor.role === 'WORKER' || actor.role === 'FLOOR_MANAGER') throw forbidden('Only store managers can change shifts');
-  const [shift] = await db.select().from(shifts).where(and(eq(shifts.id, shiftId), eq(shifts.storeId, actor.storeId))).limit(1);
+  const [shift] = await db
+    .select()
+    .from(shifts)
+    .where(and(eq(shifts.id, shiftId), eq(shifts.storeId, actor.storeId)))
+    .limit(1);
   if (!shift) throw notFound('Shift');
   const local = { start: zonedParts(shift.startAt, actor.timezone).time, end: zonedParts(shift.endAt, actor.timezone).time };
   const { startAt, endAt } = shiftWindow(shift.date, input.startTime ?? local.start, input.endTime ?? local.end, actor.timezone);
@@ -499,7 +553,9 @@ async function matchShift(employeeId: string, at: Date) {
 function computeTimes(clockInAt: Date, clockOutAt: Date | null, shift: { startAt: Date; endAt: Date; breakMinutes: number } | null) {
   const lateBy = shift ? minutesBetween(shift.startAt, clockInAt) : 0;
   const breakMinutes = shift?.breakMinutes ?? 0;
-  const worked = clockOutAt ? Math.max(0, minutesBetween(clockInAt, clockOutAt) - (minutesBetween(clockInAt, clockOutAt) > 5 * 60 ? breakMinutes : 0)) : 0;
+  const worked = clockOutAt
+    ? Math.max(0, minutesBetween(clockInAt, clockOutAt) - (minutesBetween(clockInAt, clockOutAt) > 5 * 60 ? breakMinutes : 0))
+    : 0;
   return {
     lateByMinutes: lateBy > LATE_GRACE_MINUTES ? lateBy : 0,
     leftEarlyByMinutes: clockOutAt && shift ? Math.max(0, minutesBetween(clockOutAt, shift.endAt)) : 0,
@@ -548,7 +604,8 @@ export async function clockIn(
       .returning({ id: attendanceRecords.id });
     recordId = record!.id;
   } catch (error) {
-    if ((error as { cause?: { code?: string } }).cause?.code === '23505') throw conflict('You are already clocked in', 'ALREADY_CLOCKED_IN');
+    if ((error as { cause?: { code?: string } }).cause?.code === '23505')
+      throw conflict('You are already clocked in', 'ALREADY_CLOCKED_IN');
     throw error;
   }
   broadcast.toStoreOps(actor.storeId, SocketEvents.ATTENDANCE_CHANGED, { employeeId: actor.employeeId });
@@ -609,7 +666,12 @@ export async function myAttendance(actor: StaffActor): Promise<MyAttendance> {
 export async function attendanceBoard(storeId: string, date: string, timezone: string): Promise<AttendanceBoard> {
   const { start, end } = zonedRange(date, date, timezone);
   const rows = await attendanceQuery(db)
-    .where(and(eq(attendanceRecords.storeId, storeId), or(and(gte(attendanceRecords.clockInAt, start), lt(attendanceRecords.clockInAt, end)), isNull(attendanceRecords.clockOutAt))))
+    .where(
+      and(
+        eq(attendanceRecords.storeId, storeId),
+        or(and(gte(attendanceRecords.clockInAt, start), lt(attendanceRecords.clockInAt, end)), isNull(attendanceRecords.clockOutAt)),
+      ),
+    )
     .orderBy(asc(attendanceRecords.clockInAt));
   const records = rows.map(serializeAttendance);
   const dayShifts = await listShifts(storeId, date, date);
@@ -618,7 +680,9 @@ export async function attendanceBoard(storeId: string, date: string, timezone: s
     date,
     onDuty: records.filter((r) => !r.clockOutAt),
     completed: records.filter((r) => r.clockOutAt),
-    notYetIn: dayShifts.filter((s) => !s.attendance && new Date(s.startAt) <= new Date(now.getTime() + 60 * 60_000) && new Date(s.endAt) > now),
+    notYetIn: dayShifts.filter(
+      (s) => !s.attendance && new Date(s.startAt) <= new Date(now.getTime() + 60 * 60_000) && new Date(s.endAt) > now,
+    ),
   };
 }
 
@@ -639,7 +703,13 @@ export async function attendanceRecordsInRange(storeId: string, from: string, to
 }
 
 /** Who worked how many hours and days, who was late, and the estimated pay for the period. */
-export async function attendanceSummary(storeId: string, from: string, to: string, timezone: string, showPay: boolean): Promise<AttendanceSummaryRow[]> {
+export async function attendanceSummary(
+  storeId: string,
+  from: string,
+  to: string,
+  timezone: string,
+  showPay: boolean,
+): Promise<AttendanceSummaryRow[]> {
   const team = await db
     .select()
     .from(employees)

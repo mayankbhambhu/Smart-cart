@@ -64,12 +64,7 @@ export function clearRefreshCookie(res: Response, kind: UserKind): void {
 }
 
 /** Issues an access token plus a rotating refresh token (cookie for web, body for mobile). */
-export async function issueSession(
-  user: UserRow,
-  req: Request,
-  res: Response,
-  family: string = crypto.randomUUID(),
-): Promise<AuthSession> {
+export async function issueSession(user: UserRow, req: Request, res: Response, family: string = crypto.randomUUID()): Promise<AuthSession> {
   if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_DISABLED', 'This account has been deactivated');
   const memberships = user.kind === 'STAFF' ? await loadMemberships(db, user.id) : [];
   if (user.kind === 'STAFF' && memberships.length === 0) {
@@ -149,7 +144,11 @@ export async function revokeAllSessions(executor: Executor, userId: string): Pro
     .set({ revokedAt: new Date() })
     .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt), gt(refreshTokens.expiresAt, new Date())));
   const [user] = await executor.select({ v: users.tokenVersion }).from(users).where(eq(users.id, userId));
-  if (user) await executor.update(users).set({ tokenVersion: user.v + 1 }).where(eq(users.id, userId));
+  if (user)
+    await executor
+      .update(users)
+      .set({ tokenVersion: user.v + 1 })
+      .where(eq(users.id, userId));
 }
 
 /** Mobile apps send the token in the body; browsers rely on the realm's httpOnly cookie. */

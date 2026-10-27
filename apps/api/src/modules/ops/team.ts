@@ -63,10 +63,17 @@ opsTeamRouter.patch('/employees/:employeeId', allowRoles('OWNER', 'STORE_MANAGER
     .where(and(eq(employees.id, employeeId), eq(employees.storeId, req.staff!.storeId)))
     .limit(1);
   if (!target) throw notFound('Employee');
-  if (target.role === 'OWNER' || (req.staff!.role === 'STORE_MANAGER' && target.role === 'STORE_MANAGER' && target.id !== req.staff!.employeeId)) {
+  if (
+    target.role === 'OWNER' ||
+    (req.staff!.role === 'STORE_MANAGER' && target.role === 'STORE_MANAGER' && target.id !== req.staff!.employeeId)
+  ) {
     throw forbidden('You cannot edit this person’s record');
   }
-  if (req.staff!.role === 'STORE_MANAGER' && target.id === req.staff!.employeeId && (input.wageAmount !== undefined || input.wageType !== undefined)) {
+  if (
+    req.staff!.role === 'STORE_MANAGER' &&
+    target.id === req.staff!.employeeId &&
+    (input.wageAmount !== undefined || input.wageType !== undefined)
+  ) {
     throw forbidden('Ask the store owner to change your own wage');
   }
   await db.update(employees).set(input).where(eq(employees.id, employeeId));
@@ -83,7 +90,10 @@ function actor(req: Parameters<typeof canSeeWages>[0]) {
 
 opsTeamRouter.get('/requests', leadership, async (req, res) => {
   const query = parse(CredentialRequestsQuerySchema, req.query);
-  res.json((await listRequests({ storeId: req.staff!.storeId, statuses: query.status, q: query.q, limit: query.limit, offset: query.offset })).items);
+  res.json(
+    (await listRequests({ storeId: req.staff!.storeId, statuses: query.status, q: query.q, limit: query.limit, offset: query.offset }))
+      .items,
+  );
 });
 
 opsTeamRouter.post('/requests', leadership, async (req, res) => {

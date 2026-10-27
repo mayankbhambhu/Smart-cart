@@ -25,7 +25,10 @@ storesRouter.get('/', async (req, res) => {
     const like = `%${query.q}%`;
     conditions.push(or(ilike(stores.name, like), ilike(stores.city, like), ilike(stores.addressLine, like), ilike(stores.pincode, like))!);
   }
-  const rows = await db.select().from(stores).where(and(...conditions));
+  const rows = await db
+    .select()
+    .from(stores)
+    .where(and(...conditions));
   const list: StoreSummary[] = rows.map((s) => serializeStore(s, origin));
   list.sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0) || a.name.localeCompare(b.name));
   res.json(list);

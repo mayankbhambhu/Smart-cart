@@ -31,7 +31,12 @@ const EnvSchema = z.object({
   REDIS_URL: optional,
 
   JWT_ACCESS_SECRET: z.string().min(32).default(DEV_JWT_SECRET),
-  ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().min(1).max(24 * 60).default(15),
+  ACCESS_TOKEN_TTL_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60)
+    .default(15),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   COOKIE_SECURE: bool(false),
 
@@ -73,7 +78,11 @@ const EnvSchema = z.object({
   ENABLE_JOBS: bool(true),
   MIGRATE_ON_START: bool(false),
   /** Sign-in attempts per IP per 15 minutes (login, OTP, password reset). */
-  AUTH_RATE_LIMIT: z.coerce.number().int().min(1).default(process.env.NODE_ENV === 'production' ? 30 : 500),
+  AUTH_RATE_LIMIT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(process.env.NODE_ENV === 'production' ? 30 : 500),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -4,10 +4,7 @@ import { PASSWORDS, api, bearer, customerSession, newCustomer, staffSession } fr
 describe('customer authentication', () => {
   it('registers with email and signs in again', async () => {
     const email = `new.${Date.now()}@example.com`;
-    const registered = await api()
-      .post('/api/v1/auth/register')
-      .send({ name: 'Ananya Test', email, password: 'Secret123' })
-      .expect(201);
+    const registered = await api().post('/api/v1/auth/register').send({ name: 'Ananya Test', email, password: 'Secret123' }).expect(201);
     expect(registered.body.user).toMatchObject({ kind: 'CUSTOMER', email, name: 'Ananya Test' });
     expect(registered.body.accessToken).toBeTypeOf('string');
     expect(registered.headers['set-cookie']?.[0]).toMatch(/sc_refresh_customer=.*HttpOnly/i);
@@ -21,7 +18,9 @@ describe('customer authentication', () => {
   it('validates input with field-level errors', async () => {
     const res = await api().post('/api/v1/auth/register').send({ name: 'A', email: 'bad', password: 'short' }).expect(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    expect(res.body.error.details.fields.map((f: { path: string }) => f.path)).toEqual(expect.arrayContaining(['name', 'email', 'password']));
+    expect(res.body.error.details.fields.map((f: { path: string }) => f.path)).toEqual(
+      expect.arrayContaining(['name', 'email', 'password']),
+    );
   });
 
   it('signs up with a phone OTP and asks new users for their name', async () => {

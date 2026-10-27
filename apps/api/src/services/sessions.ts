@@ -266,10 +266,7 @@ async function tickListItem(tx: Transaction, session: SessionRow, productId: str
     .where(and(eq(listItems.listId, session.listId!), eq(listItems.productId, productId), eq(listItems.isChecked, false)))
     .limit(1);
   if (!item) return;
-  await tx
-    .update(listItems)
-    .set({ isChecked: true, checkedById: session.userId, checkedAt: new Date() })
-    .where(eq(listItems.id, item.id));
+  await tx.update(listItems).set({ isChecked: true, checkedById: session.userId, checkedAt: new Date() }).where(eq(listItems.id, item.id));
   afterCommit(async () => {
     const [shopper] = await db.select({ name: users.name }).from(users).where(eq(users.id, session.userId)).limit(1);
     const listItem = await serializeItem(item.id, session.listId!, session.storeId);
@@ -451,12 +448,24 @@ export async function checkout(sessionId: string, userId: string, input: Session
         shelf: sp.shelf,
       })),
     );
-    await tx.insert(orderEvents).values({ orderId: order!.id, status: 'PENDING_PAYMENT', actorId: userId, actorName: customer?.name ?? null });
+    await tx
+      .insert(orderEvents)
+      .values({ orderId: order!.id, status: 'PENDING_PAYMENT', actorId: userId, actorName: customer?.name ?? null });
     const [paymentRow] = await tx
       .insert(payments)
-      .values({ orderId: order!.id, userId, provider, method: input.paymentMethod, amount: bill.total, savedPaymentMethodId: input.savedPaymentMethodId ?? null })
+      .values({
+        orderId: order!.id,
+        userId,
+        provider,
+        method: input.paymentMethod,
+        amount: bill.total,
+        savedPaymentMethodId: input.savedPaymentMethodId ?? null,
+      })
       .returning();
-    await tx.update(instoreSessions).set({ status: 'CHECKOUT', orderId: order!.id, lastActivityAt: new Date() }).where(eq(instoreSessions.id, locked.id));
+    await tx
+      .update(instoreSessions)
+      .set({ status: 'CHECKOUT', orderId: order!.id, lastActivityAt: new Date() })
+      .where(eq(instoreSessions.id, locked.id));
     publishSession(afterCommit, locked, null);
     return { orderId: order!.id, payment: paymentRow! };
   });
@@ -488,7 +497,9 @@ export async function pairCart(device: { id: string; storeId: string }, pairingC
   const [session] = await db
     .select()
     .from(instoreSessions)
-    .where(and(eq(instoreSessions.storeId, device.storeId), eq(instoreSessions.pairingCode, pairingCode), eq(instoreSessions.status, 'ACTIVE')))
+    .where(
+      and(eq(instoreSessions.storeId, device.storeId), eq(instoreSessions.pairingCode, pairingCode), eq(instoreSessions.status, 'ACTIVE')),
+    )
     .limit(1);
   if (!session) throw notFound('No active shopping session with this code in this store');
   await db
@@ -506,7 +517,9 @@ export async function cartSessionFor(deviceId: string): Promise<SessionRow | nul
   const [session] = await db
     .select()
     .from(instoreSessions)
-    .where(and(eq(instoreSessions.cartDeviceId, deviceId), or(eq(instoreSessions.status, 'ACTIVE'), eq(instoreSessions.status, 'CHECKOUT'))))
+    .where(
+      and(eq(instoreSessions.cartDeviceId, deviceId), or(eq(instoreSessions.status, 'ACTIVE'), eq(instoreSessions.status, 'CHECKOUT'))),
+    )
     .limit(1);
   return session ?? null;
 }

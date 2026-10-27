@@ -15,10 +15,7 @@ export interface PushMessage {
 /** Sends a push notification to every registered device of the given users via Expo. */
 export async function sendPush(userIds: string[], message: PushMessage): Promise<void> {
   if (!env.PUSH_ENABLED || isTest || userIds.length === 0) return;
-  const tokens = await db
-    .select({ token: pushTokens.token })
-    .from(pushTokens)
-    .where(inArray(pushTokens.userId, userIds));
+  const tokens = await db.select({ token: pushTokens.token }).from(pushTokens).where(inArray(pushTokens.userId, userIds));
   const expoTokens = tokens.map((t) => t.token).filter((t) => t.startsWith('ExponentPushToken[') || t.startsWith('ExpoPushToken['));
   if (expoTokens.length === 0) return;
 

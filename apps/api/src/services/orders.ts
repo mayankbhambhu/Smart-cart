@@ -121,7 +121,10 @@ export async function loadOrder(executor: Executor, orderId: string, exitToken: 
       unitPrice: item.unitPrice,
       mrp: item.mrp,
       lineTotal: item.lineTotal,
-      location: item.aisle !== null && item.row !== null && item.shelf !== null ? locationOf({ aisle: item.aisle, row: item.row, shelf: item.shelf }) : null,
+      location:
+        item.aisle !== null && item.row !== null && item.shelf !== null
+          ? locationOf({ aisle: item.aisle, row: item.row, shelf: item.shelf })
+          : null,
     })),
     bill: billOf(row),
     couponCode: row.couponCode,
@@ -240,11 +243,24 @@ export async function priceCart(
 ): Promise<PricedCart> {
   const store = await getStore(executor, input.storeId);
   const context = await loadCatalogContext(executor, store.id, store.layout);
-  const catalog = await catalogProductsByIds(executor, store.id, input.items.map((i) => i.productId), context);
+  const catalog = await catalogProductsByIds(
+    executor,
+    store.id,
+    input.items.map((i) => i.productId),
+    context,
+  );
   const spRows = await executor
     .select()
     .from(storeProducts)
-    .where(and(eq(storeProducts.storeId, store.id), inArray(storeProducts.productId, input.items.map((i) => i.productId))));
+    .where(
+      and(
+        eq(storeProducts.storeId, store.id),
+        inArray(
+          storeProducts.productId,
+          input.items.map((i) => i.productId),
+        ),
+      ),
+    );
   const spByProduct = new Map(spRows.map((sp) => [sp.productId, sp]));
 
   const merged = new Map<string, number>();
@@ -306,9 +322,23 @@ export async function priceCart(
 
   let applied: AppliedOffer | null = offer;
   if (input.couponCode && !offerRule) {
-    applied = { offerId: '', code: input.couponCode, title: input.couponCode, applicable: false, discount: 0, message: 'This code is not valid' };
+    applied = {
+      offerId: '',
+      code: input.couponCode,
+      title: input.couponCode,
+      applicable: false,
+      discount: 0,
+      message: 'This code is not valid',
+    };
   } else if (offerRule && blockedMessage) {
-    applied = { offerId: offerRule.id, code: offerRule.code, title: offerRule.title, applicable: false, discount: 0, message: blockedMessage };
+    applied = {
+      offerId: offerRule.id,
+      code: offerRule.code,
+      title: offerRule.title,
+      applicable: false,
+      discount: 0,
+      message: blockedMessage,
+    };
   }
   return { store, lines, unavailable, bill, offer: applied, offerId: applied?.applicable ? applied.offerId : null };
 }
@@ -382,7 +412,12 @@ export async function placeOrder(userId: string, input: PlaceOrderInput): Promis
       .where(and(eq(orders.userId, userId), eq(orders.idempotencyKey, input.idempotencyKey)))
       .limit(1);
     if (existing) {
-      const [payment] = await db.select().from(payments).where(eq(payments.orderId, existing.id)).orderBy(sql`${payments.createdAt} desc`).limit(1);
+      const [payment] = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.orderId, existing.id))
+        .orderBy(sql`${payments.createdAt} desc`)
+        .limit(1);
       return { order: (await loadOrder(db, existing.id))!, payment: toPaymentInfo(payment!) };
     }
   }
@@ -545,7 +580,11 @@ export async function retryPayment(
   method: PaymentMethodType,
   savedPaymentMethodId?: string,
 ): Promise<CheckoutResult> {
-  const [order] = await db.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.userId, userId))).limit(1);
+  const [order] = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
+    .limit(1);
   if (!order) throw notFound('Order');
   if (order.status !== 'PENDING_PAYMENT') throw conflict('This order is not waiting for payment');
   assertMethodAllowed(method, order.channel);
@@ -594,7 +633,10 @@ export async function applyPaymentResult(
         .set({ status: 'FAILED', failureReason: result.reason })
         .where(eq(payments.id, payment.id))
         .returning();
-      await tx.update(orders).set({ paymentStatus: 'FAILED' }).where(and(eq(orders.id, payment.orderId), eq(orders.status, 'PENDING_PAYMENT')));
+      await tx
+        .update(orders)
+        .set({ paymentStatus: 'FAILED' })
+        .where(and(eq(orders.id, payment.orderId), eq(orders.status, 'PENDING_PAYMENT')));
       afterCommit(() => broadcast.toOrder(payment.orderId, SocketEvents.ORDER_CHANGED, { orderId: payment.orderId }));
       return { orderId: payment.orderId, exitToken: null, payment: failed! };
     }
@@ -639,7 +681,9 @@ export async function applyPaymentResult(
       exitToken = issued.token;
       if (order.sessionId) {
         await tx.update(instoreSessions).set({ status: 'PAID', endedAt: now }).where(eq(instoreSessions.id, order.sessionId));
-        afterCommit(() => broadcast.toSession(order.sessionId!, SocketEvents.SESSION_UPDATED, { sessionId: order.sessionId, status: 'PAID' }));
+        afterCommit(() =>
+          broadcast.toSession(order.sessionId!, SocketEvents.SESSION_UPDATED, { sessionId: order.sessionId, status: 'PAID' }),
+        );
       }
     }
     await onOrderPlaced(tx, updated!, afterCommit);
@@ -705,11 +749,10 @@ export async function cancelOrder(
         'NOT_CANCELLABLE',
       );
     }
+    await tx.update(orders).set({ status: 'CANCELLED', cancelledAt: new Date(), cancelReason: reason }).where(eq(orders.id, order.id));
     await tx
-      .update(orders)
-      .set({ status: 'CANCELLED', cancelledAt: new Date(), cancelReason: reason })
-      .where(eq(orders.id, order.id));
-    await tx.insert(orderEvents).values({ orderId: order.id, status: 'CANCELLED', note: reason, actorId: actor.userId, actorName: actor.name });
+      .insert(orderEvents)
+      .values({ orderId: order.id, status: 'CANCELLED', note: reason, actorId: actor.userId, actorName: actor.name });
     if (order.channel !== 'IN_STORE') {
       await releaseOrder(tx, order.id, actor.userId, afterCommit);
     } else if (order.sessionId) {
@@ -775,11 +818,18 @@ export async function updateOrderStatus(
     return cancelOrder(orderId, { userId: staff.userId, name: staff.name, isStaff: true }, input.note ?? 'Cancelled by the store');
   }
   await transaction(async (tx, afterCommit) => {
-    const [order] = await tx.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.storeId, storeId))).for('update');
+    const [order] = await tx
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, orderId), eq(orders.storeId, storeId)))
+      .for('update');
     if (!order) throw notFound('Order');
     const allowed = ORDER_STAFF_TRANSITIONS[order.channel][order.status] ?? [];
     if (!allowed.includes(input.status)) {
-      throw conflict(`Cannot move an order from "${ORDER_STATUS_LABELS[order.status]}" to "${ORDER_STATUS_LABELS[input.status]}"`, 'INVALID_TRANSITION');
+      throw conflict(
+        `Cannot move an order from "${ORDER_STATUS_LABELS[order.status]}" to "${ORDER_STATUS_LABELS[input.status]}"`,
+        'INVALID_TRANSITION',
+      );
     }
     if (input.status === 'PICKED_UP' && (input.pickupCode ?? '').toUpperCase() !== order.pickupCode) {
       throw new AppError(400, 'PICKUP_CODE_MISMATCH', 'The pickup code does not match this order');
@@ -807,7 +857,9 @@ export async function updateOrderStatus(
       }
     }
     const [updated] = await tx.update(orders).set(patch).where(eq(orders.id, order.id)).returning();
-    await tx.insert(orderEvents).values({ orderId: order.id, status: input.status, note: input.note ?? null, actorId: staff.userId, actorName: staff.name });
+    await tx
+      .insert(orderEvents)
+      .values({ orderId: order.id, status: input.status, note: input.note ?? null, actorId: staff.userId, actorName: staff.name });
     const message = STATUS_MESSAGES[input.status]?.(updated!);
     if (message) {
       await notifyUsers(

@@ -112,10 +112,7 @@ opsSettingsRouter.get('/offers', async (req, res) => {
     .select()
     .from(offers)
     .where(
-      and(
-        or(isNull(offers.storeId), eq(offers.storeId, req.staff!.storeId)),
-        includeExpired ? undefined : gt(offers.endsAt, new Date()),
-      ),
+      and(or(isNull(offers.storeId), eq(offers.storeId, req.staff!.storeId)), includeExpired ? undefined : gt(offers.endsAt, new Date())),
     )
     .orderBy(desc(offers.isActive), asc(offers.endsAt));
   res.json(await serializeOffers(rows));
@@ -205,7 +202,13 @@ opsSettingsRouter.post('/devices', leadership, async (req, res) => {
   const apiKey = newDeviceKey();
   const [row] = await db
     .insert(devices)
-    .values({ storeId: req.staff!.storeId, type: input.type, name: input.name, apiKeyHash: sha256(apiKey), apiKeyPrefix: apiKey.slice(0, 12) })
+    .values({
+      storeId: req.staff!.storeId,
+      type: input.type,
+      name: input.name,
+      apiKeyHash: sha256(apiKey),
+      apiKeyPrefix: apiKey.slice(0, 12),
+    })
     .returning();
   const body: DeviceWithKey = { ...serializeDevice(row!), apiKey };
   res.status(201).json(body);

@@ -25,7 +25,13 @@ describe('work assignment', () => {
     const created = await api()
       .post(`/api/v1/ops/stores/${storeId}/tasks`)
       .set(bearer(manager))
-      .send({ title: 'Face up the snacks aisle', category: 'DISPLAY_SETUP', priority: 'HIGH', assigneeId: employee('meera.joshi').id, aisle: 4 })
+      .send({
+        title: 'Face up the snacks aisle',
+        category: 'DISPLAY_SETUP',
+        priority: 'HIGH',
+        assigneeId: employee('meera.joshi').id,
+        aisle: 4,
+      })
       .expect(201);
     const task = created.body as Task;
     expect(task).toMatchObject({ status: 'TODO', assignee: { name: 'Meera Joshi' }, assignedBy: { name: 'Kavya Reddy' } });
@@ -34,7 +40,11 @@ describe('work assignment', () => {
     expect(inbox.body.items[0]).toMatchObject({ type: 'TASK_ASSIGNED' });
     expect(inbox.body.unread).toBeGreaterThan(0);
 
-    const mine = await api().get(`/api/v1/ops/stores/${storeId}/tasks`).query({ scope: 'mine', status: 'TODO' }).set(bearer(worker)).expect(200);
+    const mine = await api()
+      .get(`/api/v1/ops/stores/${storeId}/tasks`)
+      .query({ scope: 'mine', status: 'TODO' })
+      .set(bearer(worker))
+      .expect(200);
     expect((mine.body as Task[]).some((t) => t.id === task.id)).toBe(true);
 
     await api().post(`/api/v1/ops/stores/${storeId}/tasks/${task.id}/complete`).set(bearer(manager)).send({ note: 'not mine' }).expect(403);
@@ -46,7 +56,11 @@ describe('work assignment', () => {
       .expect(200);
     expect(done.body).toMatchObject({ status: 'DONE', completionNote: 'Faced all 4 rows and removed two damaged packs' });
 
-    await api().post(`/api/v1/ops/stores/${storeId}/tasks/${task.id}/review`).set(bearer(manager)).send({ decision: 'APPROVE' }).expect(400);
+    await api()
+      .post(`/api/v1/ops/stores/${storeId}/tasks/${task.id}/review`)
+      .set(bearer(manager))
+      .send({ decision: 'APPROVE' })
+      .expect(400);
     const reviewed = await api()
       .post(`/api/v1/ops/stores/${storeId}/tasks/${task.id}/review`)
       .set(bearer(manager))
@@ -63,7 +77,11 @@ describe('work assignment', () => {
       .set(bearer(floor))
       .send({ title: 'Mop the entrance', category: 'CLEANING', assigneeId: employee('suresh.kumar').id })
       .expect(201);
-    await api().post(`/api/v1/ops/stores/${storeId}/tasks/${created.body.id}/complete`).set(bearer(worker)).send({ note: 'Done' }).expect(200);
+    await api()
+      .post(`/api/v1/ops/stores/${storeId}/tasks/${created.body.id}/complete`)
+      .set(bearer(worker))
+      .send({ note: 'Done' })
+      .expect(200);
     const reopened = await api()
       .post(`/api/v1/ops/stores/${storeId}/tasks/${created.body.id}/review`)
       .set(bearer(floor))
@@ -96,7 +114,13 @@ describe('shifts and attendance', () => {
     const res = await api()
       .post(`/api/v1/ops/stores/${storeId}/shifts`)
       .set(bearer(manager))
-      .send({ employeeIds: [employee('pooja.nair').id, employee('ravi.teja').id], dates: days, startTime: '22:00', endTime: '06:00', label: 'Night' })
+      .send({
+        employeeIds: [employee('pooja.nair').id, employee('ravi.teja').id],
+        dates: days,
+        startTime: '22:00',
+        endTime: '06:00',
+        label: 'Night',
+      })
       .expect(201);
     expect(res.body).toHaveLength(4);
     const night = (res.body as Shift[])[0]!;
@@ -110,7 +134,11 @@ describe('shifts and attendance', () => {
     expect(again.body).toHaveLength(0);
 
     const worker = await staffSession('pooja.nair');
-    await api().post(`/api/v1/ops/stores/${storeId}/shifts`).set(bearer(worker)).send({ employeeIds: [employee('pooja.nair').id], dates: days, startTime: '09:00', endTime: '10:00' }).expect(403);
+    await api()
+      .post(`/api/v1/ops/stores/${storeId}/shifts`)
+      .set(bearer(worker))
+      .send({ employeeIds: [employee('pooja.nair').id], dates: days, startTime: '09:00', endTime: '10:00' })
+      .expect(403);
   });
 
   it('clocks in and out and reports hours, days present and lateness', async () => {
@@ -161,7 +189,11 @@ describe('shifts and attendance', () => {
       .set(bearer(floor))
       .expect(200);
     expect(floorView.body[0].estimatedPay).toBeNull();
-    await api().get(`/api/v1/ops/stores/${storeId}/attendance/summary`).query({ from: today(), to: today() }).set(bearer(worker)).expect(403);
+    await api()
+      .get(`/api/v1/ops/stores/${storeId}/attendance/summary`)
+      .query({ from: today(), to: today() })
+      .set(bearer(worker))
+      .expect(403);
   });
 
   it('accepts the rotating kiosk code for clock-in', async () => {
@@ -169,7 +201,11 @@ describe('shifts and attendance', () => {
     const record = employee('lakshmi.pillai');
     await db.delete(attendanceRecords).where(and(eq(attendanceRecords.employeeId, record.id), isNull(attendanceRecords.clockOutAt)));
     const kiosk = await api().get('/api/v1/devices/kiosk/code').set('X-Device-Key', 'scdev_blr-ind-01_kiosk').expect(200);
-    await api().post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`).set(bearer(worker)).send({ method: 'KIOSK', kioskCode: 'WRONG123' }).expect(400);
+    await api()
+      .post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`)
+      .set(bearer(worker))
+      .send({ method: 'KIOSK', kioskCode: 'WRONG123' })
+      .expect(400);
     const res = await api()
       .post(`/api/v1/ops/stores/${storeId}/attendance/clock-in`)
       .set(bearer(worker))

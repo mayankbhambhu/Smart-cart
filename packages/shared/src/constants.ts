@@ -48,15 +48,7 @@ export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
   SUPPORT: 'Support',
 };
 
-export const DEPARTMENTS = [
-  'MANAGEMENT',
-  'FLOOR',
-  'WAREHOUSE',
-  'PICKING',
-  'DELIVERY',
-  'CUSTOMER_SERVICE',
-  'SECURITY',
-] as const;
+export const DEPARTMENTS = ['MANAGEMENT', 'FLOOR', 'WAREHOUSE', 'PICKING', 'DELIVERY', 'CUSTOMER_SERVICE', 'SECURITY'] as const;
 export type Department = (typeof DEPARTMENTS)[number];
 
 export const DEPARTMENT_LABELS: Record<Department, string> = {
@@ -210,15 +202,7 @@ export type SaveablePaymentMethod = (typeof SAVEABLE_PAYMENT_METHODS)[number];
 export const PAYMENT_PROVIDERS = ['stripe', 'paypal', 'razorpay', 'demo', 'cash'] as const;
 export type PaymentProviderName = (typeof PAYMENT_PROVIDERS)[number];
 
-export const PAYMENT_STATUSES = [
-  'CREATED',
-  'REQUIRES_ACTION',
-  'PROCESSING',
-  'SUCCEEDED',
-  'FAILED',
-  'CANCELLED',
-  'REFUNDED',
-] as const;
+export const PAYMENT_STATUSES = ['CREATED', 'REQUIRES_ACTION', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export const ORDER_PAYMENT_STATUSES = ['UNPAID', 'PAID', 'FAILED', 'REFUNDED'] as const;
@@ -256,16 +240,7 @@ export const DEVICE_TYPE_LABELS: Record<DeviceType, string> = {
 export const GATE_RESULTS = ['OPENED', 'DENIED'] as const;
 export type GateResult = (typeof GATE_RESULTS)[number];
 
-export const GATE_REASONS = [
-  'OK',
-  'NOT_FOUND',
-  'ALREADY_USED',
-  'EXPIRED',
-  'REVOKED',
-  'WRONG_STORE',
-  'UNPAID',
-  'MALFORMED',
-] as const;
+export const GATE_REASONS = ['OK', 'NOT_FOUND', 'ALREADY_USED', 'EXPIRED', 'REVOKED', 'WRONG_STORE', 'UNPAID', 'MALFORMED'] as const;
 export type GateReason = (typeof GATE_REASONS)[number];
 
 export const GATE_REASON_LABELS: Record<GateReason, string> = {

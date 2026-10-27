@@ -43,7 +43,13 @@ describe('staff login requests: store manager -> owner -> admin', () => {
 
     // 2. Owner sends it back; manager fixes and resubmits.
     await api().post(`${base}/${request.id}/review`).set(bearer(owner)).send({ decision: 'REQUEST_CHANGES' }).expect(400);
-    request = (await api().post(`${base}/${request.id}/review`).set(bearer(owner)).send({ decision: 'REQUEST_CHANGES', comment: 'Add the emergency contact' }).expect(200)).body;
+    request = (
+      await api()
+        .post(`${base}/${request.id}/review`)
+        .set(bearer(owner))
+        .send({ decision: 'REQUEST_CHANGES', comment: 'Add the emergency contact' })
+        .expect(200)
+    ).body;
     expect(request.status).toBe('OWNER_CHANGES_REQUESTED');
     request = (
       await api()
@@ -68,12 +74,20 @@ describe('staff login requests: store manager -> owner -> admin', () => {
       .send({ decision: 'REQUEST_CHANGES', comment: 'Joining date must be a working day' })
       .expect(200);
     expect(sentBack.body.request.status).toBe('ADMIN_CHANGES_REQUESTED');
-    await api().patch(`${base}/${request.id}`).set(bearer(owner)).send({ joiningDate: addDays(new Date().toISOString().slice(0, 10), 5) }).expect(200);
+    await api()
+      .patch(`${base}/${request.id}`)
+      .set(bearer(owner))
+      .send({ joiningDate: addDays(new Date().toISOString().slice(0, 10), 5) })
+      .expect(200);
     request = (await api().post(`${base}/${request.id}/resubmit`).set(bearer(owner)).send({}).expect(200)).body;
     expect(request.status).toBe('PENDING_ADMIN');
 
     // 5. Admin approves and gets the one-time credentials.
-    const approved = await api().post(`/api/v1/admin/requests/${request.id}/review`).set(bearer(admin)).send({ decision: 'APPROVE' }).expect(200);
+    const approved = await api()
+      .post(`/api/v1/admin/requests/${request.id}/review`)
+      .set(bearer(admin))
+      .send({ decision: 'APPROVE' })
+      .expect(200);
     expect(approved.body.request.status).toBe('APPROVED');
     const credentials = approved.body.credentials;
     expect(credentials.username).toMatch(/^sanjay\.bhosle/);
@@ -104,7 +118,10 @@ describe('staff login requests: store manager -> owner -> admin', () => {
       .expect(200);
     expect(changed.body.user.mustChangePassword).toBe(false);
     // The pre-change access token no longer works.
-    await api().get('/api/v1/auth/me').set({ Authorization: `Bearer ${login.body.accessToken}` }).expect(401);
+    await api()
+      .get('/api/v1/auth/me')
+      .set({ Authorization: `Bearer ${login.body.accessToken}` })
+      .expect(401);
     const newToken = { Authorization: `Bearer ${changed.body.accessToken}` };
     await api().get(`/api/v1/ops/stores/${storeId}/attendance/me`).set(newToken).expect(200);
 
@@ -119,7 +136,9 @@ describe('staff login requests: store manager -> owner -> admin', () => {
     await api().post('/api/v1/auth/staff/login').send({ identifier: credentials.username, password: 'Warehouse99' }).expect(401);
 
     const audit = await api().get('/api/v1/admin/audit').set(bearer(admin)).expect(200);
-    expect(audit.body.map((a: { action: string }) => a.action)).toEqual(expect.arrayContaining(['CREDENTIALS_ISSUED', 'EMPLOYEE_OFFBOARDED']));
+    expect(audit.body.map((a: { action: string }) => a.action)).toEqual(
+      expect.arrayContaining(['CREDENTIALS_ISSUED', 'EMPLOYEE_OFFBOARDED']),
+    );
   });
 
   it('lets the owner request a store manager directly to admin', async () => {
@@ -187,15 +206,32 @@ describe('admin console', () => {
     const created = await api()
       .post(`/api/v1/ops/stores/${storeId}/tickets`)
       .set(bearer(manager))
-      .send({ category: 'HARDWARE', priority: 'HIGH', subject: 'Smart Cart 01 scanner is dead', description: 'The barcode scanner on cart 01 stopped reading items this morning.' })
+      .send({
+        category: 'HARDWARE',
+        priority: 'HIGH',
+        subject: 'Smart Cart 01 scanner is dead',
+        description: 'The barcode scanner on cart 01 stopped reading items this morning.',
+      })
       .expect(201);
     expect(created.body.ticketNumber).toMatch(/^TKT-\d{4}-\d{4}$/);
-    await api().post(`/api/v1/admin/tickets/${created.body.id}/messages`).set(bearer(admin)).send({ body: 'Vendor SLA is 24h', isInternal: true }).expect(200);
-    await api().post(`/api/v1/admin/tickets/${created.body.id}/messages`).set(bearer(admin)).send({ body: 'A replacement is on the way.' }).expect(200);
+    await api()
+      .post(`/api/v1/admin/tickets/${created.body.id}/messages`)
+      .set(bearer(admin))
+      .send({ body: 'Vendor SLA is 24h', isInternal: true })
+      .expect(200);
+    await api()
+      .post(`/api/v1/admin/tickets/${created.body.id}/messages`)
+      .set(bearer(admin))
+      .send({ body: 'A replacement is on the way.' })
+      .expect(200);
     await api().patch(`/api/v1/admin/tickets/${created.body.id}`).set(bearer(admin)).send({ status: 'WAITING_ON_STORE' }).expect(200);
     const storeView = await api().get(`/api/v1/ops/stores/${storeId}/tickets/${created.body.id}`).set(bearer(manager)).expect(200);
     expect(storeView.body.messages.map((m: { body: string }) => m.body)).toEqual(['A replacement is on the way.']);
-    const reply = await api().post(`/api/v1/ops/stores/${storeId}/tickets/${created.body.id}/messages`).set(bearer(manager)).send({ body: 'Received, thanks!' }).expect(200);
+    const reply = await api()
+      .post(`/api/v1/ops/stores/${storeId}/tickets/${created.body.id}/messages`)
+      .set(bearer(manager))
+      .send({ body: 'Received, thanks!' })
+      .expect(200);
     expect(reply.body.status).toBe('IN_PROGRESS');
   });
 

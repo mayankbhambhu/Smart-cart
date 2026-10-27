@@ -51,7 +51,10 @@ export const PasswordSchema = z
   .regex(/[A-Za-z]/, 'Include at least one letter')
   .regex(/\d/, 'Include at least one number');
 export const NameSchema = z.string().trim().min(2, 'Name is too short').max(80, 'Name is too long');
-export const OtpCodeSchema = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code');
+export const OtpCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, 'Enter the 6-digit code');
 export const IsoDateSchema = z.iso.date('Use YYYY-MM-DD');
 export const IsoDateTimeSchema = z.iso.datetime({ offset: true, message: 'Invalid date/time' });
 export const TimeOfDaySchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm (24h)');
@@ -64,7 +67,14 @@ function csvOf<T extends readonly [string, ...string[]]>(values: T) {
   return z
     .string()
     .optional()
-    .transform((value) => (value ? value.split(',').map((v) => v.trim()).filter(Boolean) : []))
+    .transform((value) =>
+      value
+        ? value
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
+        : [],
+    )
     .pipe(z.array(z.enum(values)));
 }
 
@@ -157,7 +167,10 @@ export const AddressSchema = z.object({
   landmark: z.string().trim().max(120).optional().nullable(),
   city: z.string().trim().min(2).max(80),
   state: z.string().trim().min(2).max(80),
-  pincode: z.string().trim().regex(/^\d{6}$/, 'Enter a 6-digit PIN code'),
+  pincode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Enter a 6-digit PIN code'),
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   receiverName: NameSchema.optional().nullable(),
@@ -183,7 +196,10 @@ export const SavePaymentMethodSchema = z.discriminatedUnion('type', [
       /** Stripe PaymentMethod id (from a SetupIntent) when Stripe is live; the server reads the card details from Stripe. */
       stripePaymentMethodId: z.string().startsWith('pm_').optional(),
       brand: z.string().trim().min(2).max(20).optional(),
-      last4: z.string().regex(/^\d{4}$/).optional(),
+      last4: z
+        .string()
+        .regex(/^\d{4}$/)
+        .optional(),
       expMonth: z.number().int().min(1).max(12).optional(),
       expYear: z.number().int().min(2024).max(2100).optional(),
       holderName: NameSchema.optional(),
@@ -375,7 +391,10 @@ export const SessionCheckoutSchema = z.object({
 });
 
 export const DevicePairSchema = z.object({
-  pairingCode: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code shown in the app'),
+  pairingCode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code shown in the app'),
 });
 
 export const DeviceCartItemSchema = z.object({
@@ -767,9 +786,21 @@ export const StoreSettingsSchema = z.object({
   deliveryRadiusKm: z.number().min(0.5).max(30),
   pickupSlotMinutes: z.union([z.literal(15), z.literal(30), z.literal(60)]),
   pickupSlotCapacity: z.number().int().min(1).max(500),
-  pickupLeadMinutes: z.number().int().min(10).max(24 * 60),
-  exitPassTtlMinutes: z.number().int().min(5).max(24 * 60),
-  sessionIdleMinutes: z.number().int().min(15).max(24 * 60),
+  pickupLeadMinutes: z
+    .number()
+    .int()
+    .min(10)
+    .max(24 * 60),
+  exitPassTtlMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(24 * 60),
+  sessionIdleMinutes: z
+    .number()
+    .int()
+    .min(15)
+    .max(24 * 60),
   autoCreateRestockTasks: z.boolean(),
   geofenceMeters: z.number().int().min(0).max(5000),
 });
@@ -810,36 +841,41 @@ export const NewOwnerSchema = z.object({
   phone: PhoneSchema,
 });
 
-export const CreateStoreSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z0-9-]{4,16}$/, '4-16 letters, digits or dashes'),
-  name: z.string().trim().min(3).max(80),
-  addressLine: z.string().trim().min(5).max(200),
-  city: z.string().trim().min(2).max(80),
-  state: z.string().trim().min(2).max(80),
-  pincode: z.string().trim().regex(/^\d{6}$/, 'Enter a 6-digit PIN code'),
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
-  phone: PhoneSchema,
-  email: EmailSchema.optional(),
-  openingTime: TimeOfDaySchema.default('07:00'),
-  closingTime: TimeOfDaySchema.default('23:00'),
-  aisles: z
-    .array(z.object({ label: z.string().trim().min(2).max(40) }))
-    .min(1)
-    .max(30)
-    .optional(),
-  /** Either link an existing owner account or create a new one. */
-  ownerUserId: IdSchema.optional(),
-  newOwner: NewOwnerSchema.optional(),
-  stockCatalog: z.boolean().default(true),
-}).refine((v) => Boolean(v.ownerUserId) !== Boolean(v.newOwner), {
-  message: 'Choose an existing owner or enter the new owner details',
-  path: ['newOwner'],
-});
+export const CreateStoreSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9-]{4,16}$/, '4-16 letters, digits or dashes'),
+    name: z.string().trim().min(3).max(80),
+    addressLine: z.string().trim().min(5).max(200),
+    city: z.string().trim().min(2).max(80),
+    state: z.string().trim().min(2).max(80),
+    pincode: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, 'Enter a 6-digit PIN code'),
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    phone: PhoneSchema,
+    email: EmailSchema.optional(),
+    openingTime: TimeOfDaySchema.default('07:00'),
+    closingTime: TimeOfDaySchema.default('23:00'),
+    aisles: z
+      .array(z.object({ label: z.string().trim().min(2).max(40) }))
+      .min(1)
+      .max(30)
+      .optional(),
+    /** Either link an existing owner account or create a new one. */
+    ownerUserId: IdSchema.optional(),
+    newOwner: NewOwnerSchema.optional(),
+    stockCatalog: z.boolean().default(true),
+  })
+  .refine((v) => Boolean(v.ownerUserId) !== Boolean(v.newOwner), {
+    message: 'Choose an existing owner or enter the new owner details',
+    path: ['newOwner'],
+  });
 
 export const AdminUpdateStoreSchema = z.object({
   name: z.string().trim().min(3).max(80).optional(),

@@ -209,13 +209,17 @@ export async function seedOrderHistory(
     // A few orders from the last half hour so the live boards always have work in progress.
     const todayDow = zonedParts(now, store.timezone).dow;
     for (const [channel, minutesAgo] of LIVE_ORDERS) {
-      slots.push({ date: today, weekend: todayDow === 0 || todayDow === 6, channel, placedAt: new Date(now.getTime() - minutesAgo * 60_000) });
+      slots.push({
+        date: today,
+        weekend: todayDow === 0 || todayDow === 6,
+        channel,
+        placedAt: new Date(now.getTime() - minutesAgo * 60_000),
+      });
     }
     slots.sort((a, b) => a.placedAt.getTime() - b.placedAt.getTime());
 
     const firstDate = firstDay;
     for (const { date, weekend, channel, placedAt } of slots) {
-
       const eligible = store.customers.filter((c) => c.joinDay <= daysBetween(firstDay, date));
       const customer = rng.weighted(eligible.length > 0 ? eligible : store.customers, (c) => c.weight);
       const isFirstOrder = !customersWithOrders.has(customer.id);
@@ -448,7 +452,15 @@ export async function seedOrderHistory(
           issuedAt: placedAt,
         });
         if (exited && minutesAgo < 3 * 24 * 60) {
-          gateRows.push({ storeId: store.id, deviceId: gateId, exitPassId: passId, orderId, result: 'OPENED', reason: 'OK', createdAt: usedAt! });
+          gateRows.push({
+            storeId: store.id,
+            deviceId: gateId,
+            exitPassId: passId,
+            orderId,
+            result: 'OPENED',
+            reason: 'OK',
+            createdAt: usedAt!,
+          });
           if (rng.chance(0.03)) {
             gateRows.push({
               storeId: store.id,

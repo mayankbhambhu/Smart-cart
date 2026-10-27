@@ -10,12 +10,9 @@ const CODE128B = require('jsbarcode/bin/barcodes/CODE128/CODE128B.js').default a
 ) => { encode(): { data: string } };
 
 describe('Code 128', () => {
-  it.each(['SC7K2M9QX4TB1R8NWAZ', 'Hello World 123', 'SC-0001', '~!@#$%^&*()_+'])(
-    'matches the reference encoder for %s',
-    (text) => {
-      expect(encodeCode128(text)).toBe(new CODE128B(text, {}).encode().data);
-    },
-  );
+  it.each(['SC7K2M9QX4TB1R8NWAZ', 'Hello World 123', 'SC-0001', '~!@#$%^&*()_+'])('matches the reference encoder for %s', (text) => {
+    expect(encodeCode128(text)).toBe(new CODE128B(text, {}).encode().data);
+  });
 
   it('produces bars that start and end with a bar', () => {
     const { bars, modules } = code128Bars('ABC');

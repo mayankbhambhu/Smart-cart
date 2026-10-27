@@ -65,7 +65,10 @@ adminRouter.get('/overview', async (_req, res) => {
       active: sql<number>`count(*) filter (where ${employees.status} in ('ACTIVE', 'ON_LEAVE'))::int`,
     })
     .from(employees);
-  const [customers] = await db.select({ count: sql<number>`count(*)::int` }).from(users).where(eq(users.kind, 'CUSTOMER'));
+  const [customers] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(eq(users.kind, 'CUSTOMER'));
   const [pending] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(credentialRequests)
@@ -93,7 +96,13 @@ adminRouter.get('/overview', async (_req, res) => {
     openTickets: openTickets?.count ?? 0,
     today: { netSales: todaySummary.netSales, orders: todaySummary.orders },
     last30: { netSales: last30.netSales, orders: last30.orders, grossProfit: last30.grossProfit },
-    salesByStore: byStore.rows.map((r) => ({ storeId: r.store_id, storeName: r.name, storeCode: r.code, netSales: r.net, orders: r.orders })),
+    salesByStore: byStore.rows.map((r) => ({
+      storeId: r.store_id,
+      storeName: r.name,
+      storeCode: r.code,
+      netSales: r.net,
+      orders: r.orders,
+    })),
     trend,
   };
   res.json(body);
@@ -181,18 +190,16 @@ adminRouter.get('/stores/:storeId', async (req, res) => {
     store: { ...serializeStoreDetail(store), settings: resolveSettings(store.settings) },
     owner: row.owner,
     employees: team,
-    devices: deviceRows.map(
-      (d): Device => ({
-        id: d.id,
-        storeId: d.storeId,
-        type: d.type,
-        name: d.name,
-        apiKeyPrefix: d.apiKeyPrefix,
-        isActive: d.isActive,
-        lastSeenAt: d.lastSeenAt?.toISOString() ?? null,
-        createdAt: d.createdAt.toISOString(),
-      }),
-    ),
+    devices: deviceRows.map((d): Device => ({
+      id: d.id,
+      storeId: d.storeId,
+      type: d.type,
+      name: d.name,
+      apiKeyPrefix: d.apiKeyPrefix,
+      isActive: d.isActive,
+      lastSeenAt: d.lastSeenAt?.toISOString() ?? null,
+      createdAt: d.createdAt.toISOString(),
+    })),
     stats: {
       netSales30d: last30.netSales,
       orders30d: last30.orders,
@@ -276,9 +283,19 @@ adminRouter.post('/stores', managers, async (req, res) => {
       ownerName = owner!.name;
       ownerEmail = owner!.email;
       ownerPhone = owner!.phone;
-      ownerCredentials = { employeeId: '', employeeCode: '', username, temporaryPassword: password, loginUrl: `${env.PUBLIC_WEB_URL}/ops/login` };
+      ownerCredentials = {
+        employeeId: '',
+        employeeCode: '',
+        username,
+        temporaryPassword: password,
+        loginUrl: `${env.PUBLIC_WEB_URL}/ops/login`,
+      };
     } else {
-      const [owner] = await tx.select().from(users).where(and(eq(users.id, ownerUserId!), eq(users.kind, 'STAFF'))).limit(1);
+      const [owner] = await tx
+        .select()
+        .from(users)
+        .where(and(eq(users.id, ownerUserId!), eq(users.kind, 'STAFF')))
+        .limit(1);
       if (!owner) throw notFound('Owner account');
       ownerName = owner.name;
       ownerEmail = owner.email;
@@ -426,7 +443,15 @@ adminRouter.post('/employees/:employeeId/reset-password', managers, async (req, 
 
 adminRouter.get('/tickets', async (req, res) => {
   const query = parse(TicketsQuerySchema, req.query);
-  res.json(await listTickets({ storeId: query.storeId, statuses: query.status, category: query.category, limit: query.limit, offset: query.offset }));
+  res.json(
+    await listTickets({
+      storeId: query.storeId,
+      statuses: query.status,
+      category: query.category,
+      limit: query.limit,
+      offset: query.offset,
+    }),
+  );
 });
 
 adminRouter.get('/tickets/:ticketId', async (req, res) => {

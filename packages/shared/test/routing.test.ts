@@ -58,8 +58,7 @@ describe('walking distance', () => {
   it('changes aisles through the nearer cross-aisle', () => {
     const nearBackA = { ...locationPoint(layout, loc(1, 6))!, aisle: 1 };
     const nearBackB = { ...locationPoint(layout, loc(4, 6))!, aisle: 4 };
-    const viaBack =
-      Math.abs(nearBackA.y - layout.backY) + Math.abs(nearBackA.x - nearBackB.x) + Math.abs(nearBackB.y - layout.backY);
+    const viaBack = Math.abs(nearBackA.y - layout.backY) + Math.abs(nearBackA.x - nearBackB.x) + Math.abs(nearBackB.y - layout.backY);
     expect(walkingDistance(layout, nearBackA, nearBackB)).toBeCloseTo(viaBack);
     expect(walkingDistance(layout, nearBackA, nearBackB)).toBe(walkingDistance(layout, nearBackB, nearBackA));
   });

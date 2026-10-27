@@ -33,9 +33,7 @@ describe('schemas', () => {
     };
     expect(PlaceOrderSchema.safeParse({ ...base, channel: 'DELIVERY' }).success).toBe(false);
     expect(PlaceOrderSchema.safeParse({ ...base, channel: 'PICKUP' }).success).toBe(false);
-    expect(
-      PlaceOrderSchema.safeParse({ ...base, channel: 'PICKUP', pickupSlotStart: '2026-10-27T10:00:00.000Z' }).success,
-    ).toBe(true);
+    expect(PlaceOrderSchema.safeParse({ ...base, channel: 'PICKUP', pickupSlotStart: '2026-10-27T10:00:00.000Z' }).success).toBe(true);
   });
 
   it('requires a comment when sending a request back', () => {

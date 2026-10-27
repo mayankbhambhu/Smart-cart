@@ -70,7 +70,9 @@ opsOrdersRouter.get('/overview', async (req, res) => {
           orders: sql<number>`count(*)::int`,
         })
         .from(orders)
-        .where(and(eq(orders.storeId, storeId), gte(orders.placedAt, start), lt(orders.placedAt, end), sql`${orders.status} <> 'CANCELLED'`))
+        .where(
+          and(eq(orders.storeId, storeId), gte(orders.placedAt, start), lt(orders.placedAt, end), sql`${orders.status} <> 'CANCELLED'`),
+        )
         .groupBy(sql`1`),
       db
         .select({ count: sql<number>`count(*)::int` })
@@ -177,7 +179,9 @@ opsOrdersRouter.get('/orders', async (req, res) => {
   if (query.q) conditions.push(ilike(orders.orderNumber, `%${query.q}%`));
   if (query.date) {
     const { start, end } = zonedRange(query.date, query.date, timezone);
-    conditions.push(or(and(gte(orders.createdAt, start), lt(orders.createdAt, end)), and(gte(orders.scheduledFor, start), lt(orders.scheduledFor, end)))!);
+    conditions.push(
+      or(and(gte(orders.createdAt, start), lt(orders.createdAt, end)), and(gte(orders.scheduledFor, start), lt(orders.scheduledFor, end)))!,
+    );
   }
   const ids = await db
     .select({ id: orders.id })
@@ -202,7 +206,12 @@ opsOrdersRouter.post('/orders/:orderId/status', async (req, res) => {
   const orderId = parse(IdSchema, req.params.orderId);
   const input = parse(UpdateOrderStatusSchema, req.body);
   res.json(
-    await updateOrderStatus(orderId, req.staff!.storeId, { userId: req.auth!.userId, employeeId: req.staff!.employeeId, name: req.staff!.name }, input),
+    await updateOrderStatus(
+      orderId,
+      req.staff!.storeId,
+      { userId: req.auth!.userId, employeeId: req.staff!.employeeId, name: req.staff!.name },
+      input,
+    ),
   );
 });
 

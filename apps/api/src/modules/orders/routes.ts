@@ -1,23 +1,9 @@
-import {
-  CancelOrderSchema,
-  IdSchema,
-  OrdersQuerySchema,
-  PlaceOrderSchema,
-  QuoteSchema,
-  RetryPaymentSchema,
-} from '@smartcart/shared';
+import { CancelOrderSchema, IdSchema, OrdersQuerySchema, PlaceOrderSchema, QuoteSchema, RetryPaymentSchema } from '@smartcart/shared';
 import { Router } from 'express';
 import { parse } from '../../lib/validate';
 import { requireCustomer } from '../../middleware/auth';
 import { revealExitPass } from '../../services/exitPass';
-import {
-  cancelOrder,
-  getCustomerOrder,
-  listCustomerOrders,
-  placeOrder,
-  quote,
-  retryPayment,
-} from '../../services/orders';
+import { cancelOrder, getCustomerOrder, listCustomerOrders, placeOrder, quote, retryPayment } from '../../services/orders';
 
 export const ordersRouter = Router();
 

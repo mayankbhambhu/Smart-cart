@@ -93,7 +93,11 @@ async function onConnection(socket: Socket): Promise<void> {
   socket.on(
     SocketEvents.JOIN_ORDER,
     guard(async (orderId) => {
-      const [order] = await db.select({ userId: orders.userId, storeId: orders.storeId }).from(orders).where(eq(orders.id, orderId)).limit(1);
+      const [order] = await db
+        .select({ userId: orders.userId, storeId: orders.storeId })
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
       if (!order) return false;
       if (order.userId === user.userId || user.kind === 'ADMIN') return true;
       return user.kind === 'STAFF' && socket.rooms.has(rooms.storeOps(order.storeId));
@@ -102,7 +106,11 @@ async function onConnection(socket: Socket): Promise<void> {
   socket.on(
     SocketEvents.JOIN_SESSION,
     guard(async (sessionId) => {
-      const [session] = await db.select({ userId: instoreSessions.userId }).from(instoreSessions).where(eq(instoreSessions.id, sessionId)).limit(1);
+      const [session] = await db
+        .select({ userId: instoreSessions.userId })
+        .from(instoreSessions)
+        .where(eq(instoreSessions.id, sessionId))
+        .limit(1);
       return session?.userId === user.userId;
     }, rooms.session),
   );
@@ -112,5 +120,8 @@ async function onConnection(socket: Socket): Promise<void> {
   );
   socket.on(SocketEvents.LEAVE_LIST, (listId: unknown) => typeof listId === 'string' && void socket.leave(rooms.list(listId)));
   socket.on(SocketEvents.LEAVE_ORDER, (orderId: unknown) => typeof orderId === 'string' && void socket.leave(rooms.order(orderId)));
-  socket.on(SocketEvents.LEAVE_SESSION, (sessionId: unknown) => typeof sessionId === 'string' && void socket.leave(rooms.session(sessionId)));
+  socket.on(
+    SocketEvents.LEAVE_SESSION,
+    (sessionId: unknown) => typeof sessionId === 'string' && void socket.leave(rooms.session(sessionId)),
+  );
 }

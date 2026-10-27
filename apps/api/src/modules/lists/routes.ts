@@ -42,7 +42,13 @@ listsRouter.post('/', async (req, res) => {
   const list = await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(shoppingLists)
-      .values({ ownerId: userId, name: input.name, emoji: input.emoji ?? '🛒', storeId: input.storeId ?? null, shareCode: await generateShareCode(tx) })
+      .values({
+        ownerId: userId,
+        name: input.name,
+        emoji: input.emoji ?? '🛒',
+        storeId: input.storeId ?? null,
+        shareCode: await generateShareCode(tx),
+      })
       .returning();
     await tx.insert(listMembers).values({ listId: created!.id, userId, role: 'OWNER' });
     return created!;
@@ -66,12 +72,16 @@ listsRouter.post('/join', async (req, res) => {
       .select({ userId: listMembers.userId })
       .from(listMembers)
       .where(and(eq(listMembers.listId, list.id), ne(listMembers.userId, req.auth!.userId)));
-    await notifyUsers(db, others.map((o) => o.userId), {
-      type: 'LIST_SHARED',
-      title: `${req.auth!.name} joined ${list.name}`,
-      body: 'You can now shop this list together.',
-      data: { listId: list.id },
-    });
+    await notifyUsers(
+      db,
+      others.map((o) => o.userId),
+      {
+        type: 'LIST_SHARED',
+        title: `${req.auth!.name} joined ${list.name}`,
+        body: 'You can now shop this list together.',
+        data: { listId: list.id },
+      },
+    );
   }
   res.json(await loadList(list.id, null));
 });
@@ -105,7 +115,13 @@ listsRouter.delete('/:listId', async (req, res) => {
   if (role !== 'OWNER') throw forbidden('Only the owner can delete this list');
   const members = await db.select({ userId: listMembers.userId }).from(listMembers).where(eq(listMembers.listId, listId));
   await db.delete(shoppingLists).where(eq(shoppingLists.id, listId));
-  await publishListChange(listId, 'LIST_DELETED', { id: req.auth!.userId, name: req.auth!.name }, {}, members.map((m) => m.userId));
+  await publishListChange(
+    listId,
+    'LIST_DELETED',
+    { id: req.auth!.userId, name: req.auth!.name },
+    {},
+    members.map((m) => m.userId),
+  );
   res.status(204).end();
 });
 
@@ -139,7 +155,14 @@ listsRouter.post('/:listId/items', async (req, res) => {
   }
   const [row] = await db
     .insert(listItems)
-    .values({ listId, productId: input.productId ?? null, name: name!, quantity: input.quantity, note: input.note ?? null, addedById: req.auth!.userId })
+    .values({
+      listId,
+      productId: input.productId ?? null,
+      name: name!,
+      quantity: input.quantity,
+      note: input.note ?? null,
+      addedById: req.auth!.userId,
+    })
     .returning();
   const item = await serializeItem(row!.id, listId, storeId ?? list.storeId);
   await publishListChange(listId, 'ITEM_ADDED', { id: req.auth!.userId, name: req.auth!.name }, { item });
@@ -147,12 +170,16 @@ listsRouter.post('/:listId/items', async (req, res) => {
     .select({ userId: listMembers.userId })
     .from(listMembers)
     .where(and(eq(listMembers.listId, listId), ne(listMembers.userId, req.auth!.userId)));
-  await notifyUsers(db, others.map((o) => o.userId), {
-    type: 'LIST_ITEM_ADDED',
-    title: `${req.auth!.name.split(' ')[0]} added ${item.name}`,
-    body: `to ${list.name}${item.product?.location ? ` · Aisle ${item.product.location.aisle}, Row ${item.product.location.row}` : ''}`,
-    data: { listId, itemId: item.id },
-  });
+  await notifyUsers(
+    db,
+    others.map((o) => o.userId),
+    {
+      type: 'LIST_ITEM_ADDED',
+      title: `${req.auth!.name.split(' ')[0]} added ${item.name}`,
+      body: `to ${list.name}${item.product?.location ? ` · Aisle ${item.product.location.aisle}, Row ${item.product.location.row}` : ''}`,
+      data: { listId, itemId: item.id },
+    },
+  );
   res.status(201).json(item);
 });
 

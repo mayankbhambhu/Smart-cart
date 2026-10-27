@@ -93,8 +93,19 @@ opsWorkRouter.post('/tasks/:taskId/review', async (req, res) => {
 const planners = allowRoles('OWNER', 'STORE_MANAGER');
 
 opsWorkRouter.get('/shift-templates', async (req, res) => {
-  const rows = await db.select().from(shiftTemplates).where(eq(shiftTemplates.storeId, req.staff!.storeId)).orderBy(asc(shiftTemplates.startTime));
-  const body: ShiftTemplate[] = rows.map((t) => ({ id: t.id, name: t.name, startTime: t.startTime, endTime: t.endTime, breakMinutes: t.breakMinutes, color: t.color }));
+  const rows = await db
+    .select()
+    .from(shiftTemplates)
+    .where(eq(shiftTemplates.storeId, req.staff!.storeId))
+    .orderBy(asc(shiftTemplates.startTime));
+  const body: ShiftTemplate[] = rows.map((t) => ({
+    id: t.id,
+    name: t.name,
+    startTime: t.startTime,
+    endTime: t.endTime,
+    breakMinutes: t.breakMinutes,
+    color: t.color,
+  }));
   res.json(body);
 });
 
@@ -102,7 +113,14 @@ opsWorkRouter.post('/shift-templates', planners, async (req, res) => {
   const input = parse(ShiftTemplateSchema, req.body);
   const [row] = await db
     .insert(shiftTemplates)
-    .values({ storeId: req.staff!.storeId, name: input.name, startTime: input.startTime, endTime: input.endTime, breakMinutes: input.breakMinutes, ...(input.color ? { color: input.color } : {}) })
+    .values({
+      storeId: req.staff!.storeId,
+      name: input.name,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      breakMinutes: input.breakMinutes,
+      ...(input.color ? { color: input.color } : {}),
+    })
     .returning();
   res.status(201).json(row);
 });

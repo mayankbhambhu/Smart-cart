@@ -137,8 +137,28 @@ function staffSpecs(rng: Random, storeCode: string, owner: { name: string; usern
       .replace(/\s+/g, '.');
   const phone = () => `+9197${rng.int(10000000, 99999999)}`;
   return [
-    { name: owner.name, username: owner.username, role: 'OWNER', department: 'MANAGEMENT', designation: 'Franchise owner', wageType: 'MONTHLY', wage: 0, joinedDaysAgo: 900, phone: owner.phone },
-    { name: plan.manager, username: username(plan.manager), role: 'STORE_MANAGER', department: 'MANAGEMENT', designation: 'Store manager', wageType: 'MONTHLY', wage: 58000, joinedDaysAgo: rng.int(400, 800), phone: phone() },
+    {
+      name: owner.name,
+      username: owner.username,
+      role: 'OWNER',
+      department: 'MANAGEMENT',
+      designation: 'Franchise owner',
+      wageType: 'MONTHLY',
+      wage: 0,
+      joinedDaysAgo: 900,
+      phone: owner.phone,
+    },
+    {
+      name: plan.manager,
+      username: username(plan.manager),
+      role: 'STORE_MANAGER',
+      department: 'MANAGEMENT',
+      designation: 'Store manager',
+      wageType: 'MONTHLY',
+      wage: 58000,
+      joinedDaysAgo: rng.int(400, 800),
+      phone: phone(),
+    },
     ...plan.floor.map((name) => ({
       name,
       username: username(name),
@@ -155,7 +175,16 @@ function staffSpecs(rng: Random, storeCode: string, owner: { name: string; usern
       username: username(name),
       role: 'WORKER' as StaffRole,
       department,
-      designation: department === 'WAREHOUSE' ? 'Stock associate' : department === 'PICKING' ? 'Picker' : department === 'DELIVERY' ? 'Delivery partner' : department === 'SECURITY' ? 'Exit & security' : 'Store associate',
+      designation:
+        department === 'WAREHOUSE'
+          ? 'Stock associate'
+          : department === 'PICKING'
+            ? 'Picker'
+            : department === 'DELIVERY'
+              ? 'Delivery partner'
+              : department === 'SECURITY'
+                ? 'Exit & security'
+                : 'Store associate',
       wageType: index === plan.workers.length - 1 ? ('HOURLY' as const) : ('MONTHLY' as const),
       wage: index === plan.workers.length - 1 ? 130 : rng.pick([18000, 19500, 21000, 22500]),
       joinedDaysAgo: rng.int(30, 600),
@@ -165,9 +194,7 @@ function staffSpecs(rng: Random, storeCode: string, owner: { name: string; usern
 }
 
 async function truncateAll(): Promise<void> {
-  const tables = await db.execute<{ tablename: string }>(
-    sql`select tablename from pg_tables where schemaname = 'public'`,
-  );
+  const tables = await db.execute<{ tablename: string }>(sql`select tablename from pg_tables where schemaname = 'public'`);
   const names = tables.rows.map((t) => `"${t.tablename}"`).join(', ');
   if (names) await db.execute(sql.raw(`TRUNCATE ${names} RESTART IDENTITY CASCADE`));
 }
@@ -285,8 +312,22 @@ export async function seed(): Promise<void> {
   const demoCustomers = await db
     .insert(users)
     .values([
-      { kind: 'CUSTOMER', name: 'Priya Sharma', email: 'priya@example.com', phone: '+919900000001', passwordHash: customerHash, phoneVerifiedAt: now },
-      { kind: 'CUSTOMER', name: 'Rohit Sharma', email: 'rohit@example.com', phone: '+919900000002', passwordHash: customerHash, phoneVerifiedAt: now },
+      {
+        kind: 'CUSTOMER',
+        name: 'Priya Sharma',
+        email: 'priya@example.com',
+        phone: '+919900000001',
+        passwordHash: customerHash,
+        phoneVerifiedAt: now,
+      },
+      {
+        kind: 'CUSTOMER',
+        name: 'Rohit Sharma',
+        email: 'rohit@example.com',
+        phone: '+919900000002',
+        passwordHash: customerHash,
+        phoneVerifiedAt: now,
+      },
     ])
     .returning();
   const priya = demoCustomers[0]!;
@@ -331,7 +372,13 @@ export async function seed(): Promise<void> {
     )
     .returning();
   await db.insert(customerProfiles).values([
-    { userId: priya.id, dietaryPreferences: ['VEGETARIAN', 'HIGH_PROTEIN'], allergens: ['PEANUTS'], defaultStoreId: indiranagar.id, loyaltyPoints: 420 },
+    {
+      userId: priya.id,
+      dietaryPreferences: ['VEGETARIAN', 'HIGH_PROTEIN'],
+      allergens: ['PEANUTS'],
+      defaultStoreId: indiranagar.id,
+      loyaltyPoints: 420,
+    },
     { userId: rohit.id, dietaryPreferences: ['HIGH_PROTEIN'], allergens: [], defaultStoreId: indiranagar.id, loyaltyPoints: 180 },
     ...generatedRows.map((u, i) => ({
       userId: u.id,
@@ -365,7 +412,14 @@ export async function seed(): Promise<void> {
     const list = historyCustomers.get(g.storeCode) ?? [];
     // 40% were already customers when the history starts; the rest sign up over the 120 days.
     const joinDay = rng.chance(0.4) ? 0 : rng.int(1, 118);
-    list.push({ id: u.id, name: u.name, phone: g.phone, weight: g.weight, joinDay, address: customerAddress(g.storeCode, u.name, g.phone) });
+    list.push({
+      id: u.id,
+      name: u.name,
+      phone: g.phone,
+      weight: g.weight,
+      joinDay,
+      address: customerAddress(g.storeCode, u.name, g.phone),
+    });
     historyCustomers.set(g.storeCode, list);
   });
   const priyaHome: HistoryCustomer['address'] = {
@@ -412,7 +466,14 @@ export async function seed(): Promise<void> {
     { userId: rohit.id, ...priyaHome, receiverName: 'Rohit Sharma', receiverPhone: '+919900000002', isDefault: true },
   ]);
   await db.insert(paymentMethods).values([
-    { userId: priya.id, type: 'UPI', provider: 'demo', label: 'priya.sharma@okhdfcbank', upiId: 'priya.sharma@okhdfcbank', isDefault: true },
+    {
+      userId: priya.id,
+      type: 'UPI',
+      provider: 'demo',
+      label: 'priya.sharma@okhdfcbank',
+      upiId: 'priya.sharma@okhdfcbank',
+      isDefault: true,
+    },
     { userId: priya.id, type: 'CARD', provider: 'demo', label: 'Visa •••• 4242', brand: 'Visa', last4: '4242', expMonth: 8, expYear: 2029 },
     { userId: priya.id, type: 'PAYPAL', provider: 'demo', label: 'PayPal · priya@example.com', email: 'priya@example.com' },
     { userId: rohit.id, type: 'UPI', provider: 'demo', label: 'rohit.s@okaxis', upiId: 'rohit.s@okaxis', isDefault: true },
@@ -465,13 +526,98 @@ export async function seed(): Promise<void> {
   const offerRows = await db
     .insert(offers)
     .values([
-      { code: 'WELCOME50', title: '₹50 off your first order', description: 'On orders above ₹199. New customers only.', type: 'FLAT_OFF', value: 5000, minOrderValue: 19900, usageLimitPerUser: 1, startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#0f8a4b', createdById: superAdmin.id },
-      { code: 'FRESH20', title: '20% off fruits & vegetables', description: 'Up to ₹100 off on fresh produce.', type: 'PERCENT_OFF', value: 20, maxDiscount: 10000, categoryId: categoryBySlug.get('fruits-vegetables')!.id, startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#16a34a', createdById: superAdmin.id },
-      { code: 'WEEKEND15', title: 'Weekend stock-up: 15% off', description: '15% off on orders above ₹999, up to ₹150.', type: 'PERCENT_OFF', value: 15, minOrderValue: 99900, maxDiscount: 15000, startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#7c3aed', createdById: superAdmin.id },
-      { code: 'FREEDEL', title: 'Free delivery today', description: 'No delivery fee on orders above ₹99.', type: 'FREE_DELIVERY', value: 0, minOrderValue: 9900, channels: ['DELIVERY'], startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#f59e0b', createdById: superAdmin.id },
-      { code: 'SCANGO10', title: 'Scan & Go: 10% off', description: 'Skip the queue and save 10% (up to ₹75) when you pay in the app in store.', type: 'PERCENT_OFF', value: 10, maxDiscount: 7500, channels: ['IN_STORE'], startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#0ea5e9', createdById: superAdmin.id },
-      { code: 'LASSI3', title: 'Buy 2 Lassi, get 1 free', description: 'Amul Rose Lassi 200 ml.', type: 'BOGO', value: 0, productId: lassi.id, buyQty: 2, getQty: 1, startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#ec4899', createdById: superAdmin.id },
-      { storeId: bandra.id, code: 'BANDRA25', title: '₹25 off at Bandra West', description: 'On orders above ₹299 at our Bandra store.', type: 'FLAT_OFF', value: 2500, minOrderValue: 29900, startsAt: yearAgo, endsAt: inSixMonths, bannerColor: '#e11d48', createdById: opsAdmin.id },
+      {
+        code: 'WELCOME50',
+        title: '₹50 off your first order',
+        description: 'On orders above ₹199. New customers only.',
+        type: 'FLAT_OFF',
+        value: 5000,
+        minOrderValue: 19900,
+        usageLimitPerUser: 1,
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#0f8a4b',
+        createdById: superAdmin.id,
+      },
+      {
+        code: 'FRESH20',
+        title: '20% off fruits & vegetables',
+        description: 'Up to ₹100 off on fresh produce.',
+        type: 'PERCENT_OFF',
+        value: 20,
+        maxDiscount: 10000,
+        categoryId: categoryBySlug.get('fruits-vegetables')!.id,
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#16a34a',
+        createdById: superAdmin.id,
+      },
+      {
+        code: 'WEEKEND15',
+        title: 'Weekend stock-up: 15% off',
+        description: '15% off on orders above ₹999, up to ₹150.',
+        type: 'PERCENT_OFF',
+        value: 15,
+        minOrderValue: 99900,
+        maxDiscount: 15000,
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#7c3aed',
+        createdById: superAdmin.id,
+      },
+      {
+        code: 'FREEDEL',
+        title: 'Free delivery today',
+        description: 'No delivery fee on orders above ₹99.',
+        type: 'FREE_DELIVERY',
+        value: 0,
+        minOrderValue: 9900,
+        channels: ['DELIVERY'],
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#f59e0b',
+        createdById: superAdmin.id,
+      },
+      {
+        code: 'SCANGO10',
+        title: 'Scan & Go: 10% off',
+        description: 'Skip the queue and save 10% (up to ₹75) when you pay in the app in store.',
+        type: 'PERCENT_OFF',
+        value: 10,
+        maxDiscount: 7500,
+        channels: ['IN_STORE'],
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#0ea5e9',
+        createdById: superAdmin.id,
+      },
+      {
+        code: 'LASSI3',
+        title: 'Buy 2 Lassi, get 1 free',
+        description: 'Amul Rose Lassi 200 ml.',
+        type: 'BOGO',
+        value: 0,
+        productId: lassi.id,
+        buyQty: 2,
+        getQty: 1,
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#ec4899',
+        createdById: superAdmin.id,
+      },
+      {
+        storeId: bandra.id,
+        code: 'BANDRA25',
+        title: '₹25 off at Bandra West',
+        description: 'On orders above ₹299 at our Bandra store.',
+        type: 'FLAT_OFF',
+        value: 2500,
+        minOrderValue: 29900,
+        startsAt: yearAgo,
+        endsAt: inSixMonths,
+        bannerColor: '#e11d48',
+        createdById: opsAdmin.id,
+      },
     ])
     .returning();
 
@@ -584,10 +730,7 @@ export async function seed(): Promise<void> {
   }
 
   // --- Restock alerts for the shelves that are already low -------------------
-  const lowRows = await db
-    .select()
-    .from(storeProducts)
-    .where(lte(storeProducts.shelfQty, storeProducts.reorderThreshold));
+  const lowRows = await db.select().from(storeProducts).where(lte(storeProducts.shelfQty, storeProducts.reorderThreshold));
   if (lowRows.length > 0) {
     await db.insert(restockAlerts).values(
       lowRows.map((sp, i) => {
@@ -615,7 +758,13 @@ export async function seed(): Promise<void> {
   const banStaff = staffByStore.get(bandra.id)!;
   const managerOf = (staff: SeededEmployee[]) => staff.find((e) => e.role === 'STORE_MANAGER')!;
   const ownerOf = (staff: SeededEmployee[]) => staff.find((e) => e.role === 'OWNER')!;
-  const candidate = (fullName: string, role: CandidateDetails['role'], department: CandidateDetails['department'], wage: number, joiningInDays: number): CandidateDetails => ({
+  const candidate = (
+    fullName: string,
+    role: CandidateDetails['role'],
+    department: CandidateDetails['department'],
+    wage: number,
+    joiningInDays: number,
+  ): CandidateDetails => ({
     fullName,
     email: `${fullName.toLowerCase().replace(/[^a-z]+/g, '.')}@gmail.com`,
     phone: `+9199${rng.int(10000000, 99999999)}`,
@@ -644,12 +793,51 @@ export async function seed(): Promise<void> {
     comment?: string;
     daysAgo: number;
   }[] = [
-    { store: indiranagar, staff: indStaff, details: candidate('Deepika Rao', 'FLOOR_MANAGER', 'FLOOR', 34000, 7), status: 'PENDING_ADMIN', daysAgo: 2 },
-    { store: indiranagar, staff: indStaff, details: candidate('Manoj Tiwari', 'WORKER', 'PICKING', 19500, 10), status: 'PENDING_OWNER', daysAgo: 1 },
-    { store: indiranagar, staff: indStaff, details: candidate('Fatima Sheikh', 'WORKER', 'CUSTOMER_SERVICE', 9000, 5), status: 'ADMIN_CHANGES_REQUESTED', comment: 'The monthly wage is below the state minimum wage for this role. Please correct it and resubmit.', daysAgo: 4 },
-    { store: koramangala, staff: korStaff, details: candidate('Harish Gowda', 'WORKER', 'DELIVERY', 21000, 3), status: 'PENDING_ADMIN', daysAgo: 1 },
-    { store: bandra, staff: banStaff, details: { ...candidate('Nikita Sawant', 'WORKER', 'FLOOR', 20000, 12), emergencyContactName: null, emergencyContactPhone: null }, status: 'OWNER_CHANGES_REQUESTED', comment: 'Please add an emergency contact before I approve.', daysAgo: 3 },
-    { store: bandra, staff: banStaff, details: candidate('Aamir Qureshi', 'WORKER', 'WAREHOUSE', 19000, 2), status: 'REJECTED', comment: 'Duplicate: this person was already onboarded at another store.', daysAgo: 9 },
+    {
+      store: indiranagar,
+      staff: indStaff,
+      details: candidate('Deepika Rao', 'FLOOR_MANAGER', 'FLOOR', 34000, 7),
+      status: 'PENDING_ADMIN',
+      daysAgo: 2,
+    },
+    {
+      store: indiranagar,
+      staff: indStaff,
+      details: candidate('Manoj Tiwari', 'WORKER', 'PICKING', 19500, 10),
+      status: 'PENDING_OWNER',
+      daysAgo: 1,
+    },
+    {
+      store: indiranagar,
+      staff: indStaff,
+      details: candidate('Fatima Sheikh', 'WORKER', 'CUSTOMER_SERVICE', 9000, 5),
+      status: 'ADMIN_CHANGES_REQUESTED',
+      comment: 'The monthly wage is below the state minimum wage for this role. Please correct it and resubmit.',
+      daysAgo: 4,
+    },
+    {
+      store: koramangala,
+      staff: korStaff,
+      details: candidate('Harish Gowda', 'WORKER', 'DELIVERY', 21000, 3),
+      status: 'PENDING_ADMIN',
+      daysAgo: 1,
+    },
+    {
+      store: bandra,
+      staff: banStaff,
+      details: { ...candidate('Nikita Sawant', 'WORKER', 'FLOOR', 20000, 12), emergencyContactName: null, emergencyContactPhone: null },
+      status: 'OWNER_CHANGES_REQUESTED',
+      comment: 'Please add an emergency contact before I approve.',
+      daysAgo: 3,
+    },
+    {
+      store: bandra,
+      staff: banStaff,
+      details: candidate('Aamir Qureshi', 'WORKER', 'WAREHOUSE', 19000, 2),
+      status: 'REJECTED',
+      comment: 'Duplicate: this person was already onboarded at another store.',
+      daysAgo: 9,
+    },
   ];
   for (const plan of requestPlans) {
     requestSeq++;
@@ -670,38 +858,154 @@ export async function seed(): Promise<void> {
         ownerReviewedById: plan.status === 'PENDING_OWNER' || plan.status === 'OWNER_CHANGES_REQUESTED' ? null : owner.userId,
         ownerReviewedAt: plan.status === 'PENDING_OWNER' ? null : new Date(createdAt.getTime() + 3 * 3600_000),
         adminReviewedById: plan.status === 'ADMIN_CHANGES_REQUESTED' || plan.status === 'REJECTED' ? opsAdmin.id : null,
-        adminReviewedAt: plan.status === 'ADMIN_CHANGES_REQUESTED' || plan.status === 'REJECTED' ? new Date(createdAt.getTime() + 20 * 3600_000) : null,
+        adminReviewedAt:
+          plan.status === 'ADMIN_CHANGES_REQUESTED' || plan.status === 'REJECTED' ? new Date(createdAt.getTime() + 20 * 3600_000) : null,
         createdAt,
       })
       .returning();
     const events: (typeof credentialRequestEvents.$inferInsert)[] = [
-      { requestId: request!.id, actorId: manager.userId, actorName: manager.name, actorRole: 'STORE_MANAGER', action: 'SUBMITTED', toStatus: 'PENDING_OWNER', createdAt },
+      {
+        requestId: request!.id,
+        actorId: manager.userId,
+        actorName: manager.name,
+        actorRole: 'STORE_MANAGER',
+        action: 'SUBMITTED',
+        toStatus: 'PENDING_OWNER',
+        createdAt,
+      },
     ];
     const ownerAt = new Date(createdAt.getTime() + 3 * 3600_000);
     const adminAt = new Date(createdAt.getTime() + 20 * 3600_000);
     if (plan.status === 'OWNER_CHANGES_REQUESTED') {
-      events.push({ requestId: request!.id, actorId: owner.userId, actorName: owner.name, actorRole: 'OWNER', action: 'OWNER_REQUESTED_CHANGES', comment: plan.comment, fromStatus: 'PENDING_OWNER', toStatus: 'OWNER_CHANGES_REQUESTED', createdAt: ownerAt });
+      events.push({
+        requestId: request!.id,
+        actorId: owner.userId,
+        actorName: owner.name,
+        actorRole: 'OWNER',
+        action: 'OWNER_REQUESTED_CHANGES',
+        comment: plan.comment,
+        fromStatus: 'PENDING_OWNER',
+        toStatus: 'OWNER_CHANGES_REQUESTED',
+        createdAt: ownerAt,
+      });
     } else if (plan.status !== 'PENDING_OWNER') {
-      events.push({ requestId: request!.id, actorId: owner.userId, actorName: owner.name, actorRole: 'OWNER', action: 'OWNER_APPROVED', fromStatus: 'PENDING_OWNER', toStatus: 'PENDING_ADMIN', createdAt: ownerAt });
+      events.push({
+        requestId: request!.id,
+        actorId: owner.userId,
+        actorName: owner.name,
+        actorRole: 'OWNER',
+        action: 'OWNER_APPROVED',
+        fromStatus: 'PENDING_OWNER',
+        toStatus: 'PENDING_ADMIN',
+        createdAt: ownerAt,
+      });
     }
     if (plan.status === 'ADMIN_CHANGES_REQUESTED') {
-      events.push({ requestId: request!.id, actorId: opsAdmin.id, actorName: opsAdmin.name, actorRole: 'ADMIN', action: 'ADMIN_REQUESTED_CHANGES', comment: plan.comment, fromStatus: 'PENDING_ADMIN', toStatus: 'ADMIN_CHANGES_REQUESTED', createdAt: adminAt });
+      events.push({
+        requestId: request!.id,
+        actorId: opsAdmin.id,
+        actorName: opsAdmin.name,
+        actorRole: 'ADMIN',
+        action: 'ADMIN_REQUESTED_CHANGES',
+        comment: plan.comment,
+        fromStatus: 'PENDING_ADMIN',
+        toStatus: 'ADMIN_CHANGES_REQUESTED',
+        createdAt: adminAt,
+      });
     }
     if (plan.status === 'REJECTED') {
-      events.push({ requestId: request!.id, actorId: opsAdmin.id, actorName: opsAdmin.name, actorRole: 'ADMIN', action: 'REJECTED', comment: plan.comment, fromStatus: 'PENDING_ADMIN', toStatus: 'REJECTED', createdAt: adminAt });
+      events.push({
+        requestId: request!.id,
+        actorId: opsAdmin.id,
+        actorName: opsAdmin.name,
+        actorRole: 'ADMIN',
+        action: 'REJECTED',
+        comment: plan.comment,
+        fromStatus: 'PENDING_ADMIN',
+        toStatus: 'REJECTED',
+        createdAt: adminAt,
+      });
     }
     await db.insert(credentialRequestEvents).values(events);
   }
-  await db.execute(sql`insert into counters (key, value) values (${`credential_request:${year}`}, ${requestSeq}) on conflict (key) do update set value = excluded.value`);
+  await db.execute(
+    sql`insert into counters (key, value) values (${`credential_request:${year}`}, ${requestSeq}) on conflict (key) do update set value = excluded.value`,
+  );
 
   // --- Store requests (tickets) ------------------------------------------------
   const rakesh = banStaff.find((e) => e.name === 'Rakesh More')!;
   const ticketPlans = [
-    { store: indiranagar, by: managerOf(indStaff), category: 'HARDWARE' as const, priority: 'HIGH' as const, status: 'IN_PROGRESS' as const, subject: 'Exit Gate 2 not reading QR codes in direct sunlight', description: 'Between 4 and 6 pm the evening sun hits the scanner on Exit Gate 2 and it fails to read customer exit passes. Security has to wave customers through manually.', messages: [['ADMIN', 'Thanks Kavya. We have raised this with the hardware vendor; a technician will install a hood on the scanner. Can you share a photo of the gate?'], ['STORE', 'Shared the photo with the vendor on WhatsApp. It happens almost daily.']] as const, assigned: true, daysAgo: 2 },
-    { store: indiranagar, by: ownerOf(indStaff), category: 'PAYMENTS' as const, priority: 'MEDIUM' as const, status: 'WAITING_ON_STORE' as const, subject: 'UPI settlement mismatch for last Saturday', description: 'The settlement report is ₹1,240 lower than our day-end sales for Saturday.', messages: [['ADMIN', 'We found 3 refunds processed that day. Could you confirm the order numbers on your side?']] as const, assigned: true, daysAgo: 5 },
-    { store: koramangala, by: managerOf(korStaff), category: 'INVENTORY' as const, priority: 'LOW' as const, status: 'OPEN' as const, subject: 'Please add Amul High Protein Buttermilk to the catalogue', description: 'Customers keep asking for it. We can source it from our distributor from next week.', messages: [] as const, assigned: false, daysAgo: 1 },
-    { store: bandra, by: managerOf(banStaff), category: 'EMPLOYEE_OFFBOARDING' as const, priority: 'HIGH' as const, status: 'OPEN' as const, subject: 'Remove access for Rakesh More (resigned)', description: 'Rakesh served his notice period; his last working day was yesterday. Please delete his login.', messages: [] as const, assigned: false, daysAgo: 0, related: rakesh.id },
-    { store: koramangala, by: managerOf(korStaff), category: 'TECHNICAL' as const, priority: 'MEDIUM' as const, status: 'RESOLVED' as const, subject: 'Smart Cart 03 battery drains in 2 hours', description: 'The cart display turns off mid-shopping.', messages: [['ADMIN', 'Replacement battery pack shipped and installed by the vendor.'], ['STORE', 'Confirmed, working fine now. Thanks!']] as const, assigned: true, daysAgo: 8 },
+    {
+      store: indiranagar,
+      by: managerOf(indStaff),
+      category: 'HARDWARE' as const,
+      priority: 'HIGH' as const,
+      status: 'IN_PROGRESS' as const,
+      subject: 'Exit Gate 2 not reading QR codes in direct sunlight',
+      description:
+        'Between 4 and 6 pm the evening sun hits the scanner on Exit Gate 2 and it fails to read customer exit passes. Security has to wave customers through manually.',
+      messages: [
+        [
+          'ADMIN',
+          'Thanks Kavya. We have raised this with the hardware vendor; a technician will install a hood on the scanner. Can you share a photo of the gate?',
+        ],
+        ['STORE', 'Shared the photo with the vendor on WhatsApp. It happens almost daily.'],
+      ] as const,
+      assigned: true,
+      daysAgo: 2,
+    },
+    {
+      store: indiranagar,
+      by: ownerOf(indStaff),
+      category: 'PAYMENTS' as const,
+      priority: 'MEDIUM' as const,
+      status: 'WAITING_ON_STORE' as const,
+      subject: 'UPI settlement mismatch for last Saturday',
+      description: 'The settlement report is ₹1,240 lower than our day-end sales for Saturday.',
+      messages: [['ADMIN', 'We found 3 refunds processed that day. Could you confirm the order numbers on your side?']] as const,
+      assigned: true,
+      daysAgo: 5,
+    },
+    {
+      store: koramangala,
+      by: managerOf(korStaff),
+      category: 'INVENTORY' as const,
+      priority: 'LOW' as const,
+      status: 'OPEN' as const,
+      subject: 'Please add Amul High Protein Buttermilk to the catalogue',
+      description: 'Customers keep asking for it. We can source it from our distributor from next week.',
+      messages: [] as const,
+      assigned: false,
+      daysAgo: 1,
+    },
+    {
+      store: bandra,
+      by: managerOf(banStaff),
+      category: 'EMPLOYEE_OFFBOARDING' as const,
+      priority: 'HIGH' as const,
+      status: 'OPEN' as const,
+      subject: 'Remove access for Rakesh More (resigned)',
+      description: 'Rakesh served his notice period; his last working day was yesterday. Please delete his login.',
+      messages: [] as const,
+      assigned: false,
+      daysAgo: 0,
+      related: rakesh.id,
+    },
+    {
+      store: koramangala,
+      by: managerOf(korStaff),
+      category: 'TECHNICAL' as const,
+      priority: 'MEDIUM' as const,
+      status: 'RESOLVED' as const,
+      subject: 'Smart Cart 03 battery drains in 2 hours',
+      description: 'The cart display turns off mid-shopping.',
+      messages: [
+        ['ADMIN', 'Replacement battery pack shipped and installed by the vendor.'],
+        ['STORE', 'Confirmed, working fine now. Thanks!'],
+      ] as const,
+      assigned: true,
+      daysAgo: 8,
+    },
   ];
   let ticketSeq = 0;
   for (const plan of ticketPlans) {
@@ -737,7 +1041,9 @@ export async function seed(): Promise<void> {
       );
     }
   }
-  await db.execute(sql`insert into counters (key, value) values (${`ticket:${year}`}, ${ticketSeq}) on conflict (key) do update set value = excluded.value`);
+  await db.execute(
+    sql`insert into counters (key, value) values (${`ticket:${year}`}, ${ticketSeq}) on conflict (key) do update set value = excluded.value`,
+  );
 
   // --- Family shopping lists -----------------------------------------------
   const productByName = (fragment: string) => productRows.find((p) => p.name.includes(fragment))!;
@@ -773,27 +1079,29 @@ export async function seed(): Promise<void> {
       checkedAt: checked ? new Date(now.getTime() - 86_400_000) : null,
     };
   };
-  await db.insert(listItems).values([
-    listItem(weekly!.id, 'Taaza Toned Milk', 'Milk', 2, priya.id),
-    listItem(weekly!.id, 'Brown Bread', 'Bread', 1, priya.id),
-    listItem(weekly!.id, 'Farm Fresh Eggs', 'Eggs', 1, rohit.id),
-    listItem(weekly!.id, 'Banana Robusta', 'Bananas', 1, priya.id),
-    listItem(weekly!.id, 'Tomato Hybrid', 'Tomatoes', 2, priya.id),
-    listItem(weekly!.id, 'Coriander Leaves', 'Coriander', 1, rohit.id),
-    listItem(weekly!.id, 'Tata Tea Gold', 'Tea', 1, priya.id),
-    listItem(weekly!.id, 'Dishwash Gel', 'Dishwash gel', 1, rohit.id),
-    listItem(weekly!.id, 'Fresh Paneer', 'Paneer', 1, priya.id),
-    listItem(weekly!.id, null, 'Birthday candles', 1, rohit.id),
-    listItem(party!.id, 'Classic Salted Chips', 'Chips', 4, priya.id),
-    listItem(party!.id, 'Coca-Cola', 'Coke', 3, priya.id),
-    listItem(party!.id, 'Nacho Chips', 'Nachos', 2, priya.id),
-    listItem(party!.id, 'Popcorn Butter', 'Popcorn', 2, priya.id),
-    listItem(party!.id, 'Vanilla Ice Cream', 'Ice cream', 1, priya.id),
-    listItem(gym!.id, 'Greek Yogurt', 'Greek yogurt', 4, rohit.id),
-    listItem(gym!.id, 'Chicken Breast', 'Chicken breast', 2, rohit.id),
-    listItem(gym!.id, 'Rolled Oats', 'Oats', 1, rohit.id),
-    listItem(gym!.id, 'Almonds California', 'Almonds', 1, rohit.id, true),
-  ]);
+  await db
+    .insert(listItems)
+    .values([
+      listItem(weekly!.id, 'Taaza Toned Milk', 'Milk', 2, priya.id),
+      listItem(weekly!.id, 'Brown Bread', 'Bread', 1, priya.id),
+      listItem(weekly!.id, 'Farm Fresh Eggs', 'Eggs', 1, rohit.id),
+      listItem(weekly!.id, 'Banana Robusta', 'Bananas', 1, priya.id),
+      listItem(weekly!.id, 'Tomato Hybrid', 'Tomatoes', 2, priya.id),
+      listItem(weekly!.id, 'Coriander Leaves', 'Coriander', 1, rohit.id),
+      listItem(weekly!.id, 'Tata Tea Gold', 'Tea', 1, priya.id),
+      listItem(weekly!.id, 'Dishwash Gel', 'Dishwash gel', 1, rohit.id),
+      listItem(weekly!.id, 'Fresh Paneer', 'Paneer', 1, priya.id),
+      listItem(weekly!.id, null, 'Birthday candles', 1, rohit.id),
+      listItem(party!.id, 'Classic Salted Chips', 'Chips', 4, priya.id),
+      listItem(party!.id, 'Coca-Cola', 'Coke', 3, priya.id),
+      listItem(party!.id, 'Nacho Chips', 'Nachos', 2, priya.id),
+      listItem(party!.id, 'Popcorn Butter', 'Popcorn', 2, priya.id),
+      listItem(party!.id, 'Vanilla Ice Cream', 'Ice cream', 1, priya.id),
+      listItem(gym!.id, 'Greek Yogurt', 'Greek yogurt', 4, rohit.id),
+      listItem(gym!.id, 'Chicken Breast', 'Chicken breast', 2, rohit.id),
+      listItem(gym!.id, 'Rolled Oats', 'Oats', 1, rohit.id),
+      listItem(gym!.id, 'Almonds California', 'Almonds', 1, rohit.id, true),
+    ]);
 
   // --- A live smart-cart session in Indiranagar ------------------------------
   const sessionCustomer = historyCustomers.get('BLR-IND-01')![0]!;
@@ -808,7 +1116,10 @@ export async function seed(): Promise<void> {
       lastActivityAt: new Date(now.getTime() - 60_000),
     })
     .returning();
-  const sessionPicks = rng.sample(indInventory.filter((sp) => sp.shelfQty > 10), 4);
+  const sessionPicks = rng.sample(
+    indInventory.filter((sp) => sp.shelfQty > 10),
+    4,
+  );
   await db.insert(instoreSessionItems).values(
     sessionPicks.map((sp) => ({
       sessionId: liveSession!.id,
@@ -824,10 +1135,33 @@ export async function seed(): Promise<void> {
   const kavya = managerOf(indStaff);
   const rahul = indStaff.find((e) => e.username === 'rahul.yadav')!;
   await db.insert(notifications).values([
-    { userId: priya.id, type: 'LIST_ITEM_ADDED', title: 'Rohit added Farm Fresh Eggs', body: 'to Weekly Groceries', data: { listId: weekly!.id } },
-    { userId: priya.id, type: 'GENERAL', title: 'Scan & Go is live at Indiranagar', body: 'Shop with your phone, pay in the app and walk out. 10% off with SCANGO10.' },
-    { userId: rahul.userId, type: 'RESTOCK_ALERT', title: 'Running low on shelves', body: 'A few items in your aisles need restocking.', data: { storeId: indiranagar.id } },
-    { userId: kavya.userId, type: 'CREDENTIAL_REQUEST', title: 'Admin sent back REQ for Fatima Sheikh', body: 'Wage below the state minimum. Please correct and resubmit.', data: { storeId: indiranagar.id } },
+    {
+      userId: priya.id,
+      type: 'LIST_ITEM_ADDED',
+      title: 'Rohit added Farm Fresh Eggs',
+      body: 'to Weekly Groceries',
+      data: { listId: weekly!.id },
+    },
+    {
+      userId: priya.id,
+      type: 'GENERAL',
+      title: 'Scan & Go is live at Indiranagar',
+      body: 'Shop with your phone, pay in the app and walk out. 10% off with SCANGO10.',
+    },
+    {
+      userId: rahul.userId,
+      type: 'RESTOCK_ALERT',
+      title: 'Running low on shelves',
+      body: 'A few items in your aisles need restocking.',
+      data: { storeId: indiranagar.id },
+    },
+    {
+      userId: kavya.userId,
+      type: 'CREDENTIAL_REQUEST',
+      title: 'Admin sent back REQ for Fatima Sheikh',
+      body: 'Wage below the state minimum. Please correct and resubmit.',
+      data: { storeId: indiranagar.id },
+    },
   ]);
 
   // Approved requests in the history of the onboarding flow: link two existing workers.
@@ -855,13 +1189,42 @@ export async function seed(): Promise<void> {
       })
       .returning();
     await db.insert(credentialRequestEvents).values([
-      { requestId: request!.id, actorId: kavya.userId, actorName: kavya.name, actorRole: 'STORE_MANAGER', action: 'SUBMITTED', toStatus: 'PENDING_OWNER', createdAt },
-      { requestId: request!.id, actorId: ownerOf(indStaff).userId, actorName: ownerOf(indStaff).name, actorRole: 'OWNER', action: 'OWNER_APPROVED', fromStatus: 'PENDING_OWNER', toStatus: 'PENDING_ADMIN', createdAt: new Date(createdAt.getTime() + 2 * 3600_000) },
-      { requestId: request!.id, actorId: opsAdmin.id, actorName: opsAdmin.name, actorRole: 'ADMIN', action: 'ADMIN_APPROVED', fromStatus: 'PENDING_ADMIN', toStatus: 'APPROVED', comment: 'Credentials issued', createdAt: new Date(createdAt.getTime() + 26 * 3600_000) },
+      {
+        requestId: request!.id,
+        actorId: kavya.userId,
+        actorName: kavya.name,
+        actorRole: 'STORE_MANAGER',
+        action: 'SUBMITTED',
+        toStatus: 'PENDING_OWNER',
+        createdAt,
+      },
+      {
+        requestId: request!.id,
+        actorId: ownerOf(indStaff).userId,
+        actorName: ownerOf(indStaff).name,
+        actorRole: 'OWNER',
+        action: 'OWNER_APPROVED',
+        fromStatus: 'PENDING_OWNER',
+        toStatus: 'PENDING_ADMIN',
+        createdAt: new Date(createdAt.getTime() + 2 * 3600_000),
+      },
+      {
+        requestId: request!.id,
+        actorId: opsAdmin.id,
+        actorName: opsAdmin.name,
+        actorRole: 'ADMIN',
+        action: 'ADMIN_APPROVED',
+        fromStatus: 'PENDING_ADMIN',
+        toStatus: 'APPROVED',
+        comment: 'Credentials issued',
+        createdAt: new Date(createdAt.getTime() + 26 * 3600_000),
+      },
     ]);
     await db.update(employees).set({ credentialRequestId: request!.id }).where(eq(employees.id, employee.id));
   }
-  await db.execute(sql`insert into counters (key, value) values (${`credential_request:${year}`}, ${requestSeq}) on conflict (key) do update set value = excluded.value`);
+  await db.execute(
+    sql`insert into counters (key, value) values (${`credential_request:${year}`}, ${requestSeq}) on conflict (key) do update set value = excluded.value`,
+  );
 
   const openAlerts = await db
     .select({ id: restockAlerts.id })

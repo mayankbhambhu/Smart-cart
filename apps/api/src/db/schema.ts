@@ -161,8 +161,16 @@ export const customerProfiles = pgTable('customer_profiles', {
   userId: uuid()
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
-  dietaryPreferences: text().array().$type<DietaryTag[]>().notNull().default(sql`'{}'::text[]`),
-  allergens: text().array().$type<Allergen[]>().notNull().default(sql`'{}'::text[]`),
+  dietaryPreferences: text()
+    .array()
+    .$type<DietaryTag[]>()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  allergens: text()
+    .array()
+    .$type<Allergen[]>()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   defaultStoreId: uuid().references(() => stores.id, { onDelete: 'set null' }),
   loyaltyPoints: integer().notNull().default(0),
   stripeCustomerId: text(),
@@ -421,8 +429,16 @@ export const products = pgTable(
     emoji: text().notNull(),
     color: text().notNull(),
     imageUrl: text(),
-    dietaryTags: text().array().$type<DietaryTag[]>().notNull().default(sql`'{}'::text[]`),
-    allergens: text().array().$type<Allergen[]>().notNull().default(sql`'{}'::text[]`),
+    dietaryTags: text()
+      .array()
+      .$type<DietaryTag[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    allergens: text()
+      .array()
+      .$type<Allergen[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     maxOrderQty: integer().notNull().default(10),
     isActive: boolean().notNull().default(true),
     createdAt: createdAt(),
@@ -546,7 +562,11 @@ export const offers = pgTable(
     categoryId: uuid().references(() => categories.id, { onDelete: 'cascade' }),
     buyQty: integer(),
     getQty: integer(),
-    channels: text().array().$type<OrderChannel[]>().notNull().default(sql`'{}'::text[]`),
+    channels: text()
+      .array()
+      .$type<OrderChannel[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     startsAt: tz().notNull(),
     endsAt: tz().notNull(),
     isActive: boolean().notNull().default(true),
@@ -578,10 +598,7 @@ export const offerRedemptions = pgTable(
     discount: integer().notNull(),
     createdAt: createdAt(),
   },
-  (t) => [
-    uniqueIndex('offer_redemptions_order_uq').on(t.orderId),
-    index('offer_redemptions_offer_idx').on(t.offerId, t.userId),
-  ],
+  (t) => [uniqueIndex('offer_redemptions_order_uq').on(t.orderId), index('offer_redemptions_offer_idx').on(t.offerId, t.userId)],
 );
 
 // ---------------------------------------------------------------------------

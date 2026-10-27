@@ -200,11 +200,7 @@ export async function startProviderPayment(payment: PaymentRow, context: Payment
   }
 
   const status = payment.provider === 'cash' ? 'CREATED' : 'REQUIRES_ACTION';
-  const [updated] = await db
-    .update(payments)
-    .set({ providerRef, status })
-    .where(eq(payments.id, payment.id))
-    .returning();
+  const [updated] = await db.update(payments).set({ providerRef, status }).where(eq(payments.id, payment.id)).returning();
   return toPaymentInfo(updated!, action);
 }
 
@@ -226,9 +222,7 @@ export function toPaymentInfo(payment: PaymentRow, action: PaymentClientAction =
 // ---------------------------------------------------------------------------
 
 export type VerificationResult =
-  | { status: 'succeeded'; providerPaymentId: string | null }
-  | { status: 'pending' }
-  | { status: 'failed'; reason: string };
+  { status: 'succeeded'; providerPaymentId: string | null } | { status: 'pending' } | { status: 'failed'; reason: string };
 
 /** Asks the provider whether a payment really succeeded (never trust the client alone). */
 export async function verifyWithProvider(payment: PaymentRow, payload: Record<string, string> = {}): Promise<VerificationResult> {
@@ -338,7 +332,11 @@ export function parseRazorpayWebhook(rawBody: Buffer, signature: string | undefi
     return { provider: 'razorpay', paymentRef: entity.order_id, result: { status: 'succeeded', providerPaymentId: entity.id } };
   }
   if (body.event === 'payment.failed') {
-    return { provider: 'razorpay', paymentRef: entity.order_id, result: { status: 'failed', reason: entity.error_description ?? 'Payment failed' } };
+    return {
+      provider: 'razorpay',
+      paymentRef: entity.order_id,
+      result: { status: 'failed', reason: entity.error_description ?? 'Payment failed' },
+    };
   }
   return null;
 }
@@ -357,10 +355,13 @@ async function ensureStripeCustomer(userId: string): Promise<string> {
     phone: user?.phone ?? undefined,
     metadata: { userId },
   });
-  await db.insert(customerProfiles).values({ userId, stripeCustomerId: customer.id }).onConflictDoUpdate({
-    target: customerProfiles.userId,
-    set: { stripeCustomerId: customer.id },
-  });
+  await db
+    .insert(customerProfiles)
+    .values({ userId, stripeCustomerId: customer.id })
+    .onConflictDoUpdate({
+      target: customerProfiles.userId,
+      set: { stripeCustomerId: customer.id },
+    });
   return customer.id;
 }
 
@@ -378,12 +379,18 @@ export async function describeStripeCard(
   return { brand, last4: method.card.last4, expMonth: method.card.exp_month, expYear: method.card.exp_year };
 }
 
-export async function createStripeSetupIntent(userId: string): Promise<{ clientSecret: string; customerId: string; publishableKey: string }> {
+export async function createStripeSetupIntent(
+  userId: string,
+): Promise<{ clientSecret: string; customerId: string; publishableKey: string }> {
   if (!providerLive.stripe()) {
     throw new AppError(501, 'STRIPE_NOT_CONFIGURED', 'Card saving through Stripe is not configured; cards are saved in demo mode');
   }
   const customerId = await ensureStripeCustomer(userId);
-  const intent = await stripe!.setupIntents.create({ customer: customerId, usage: 'off_session', automatic_payment_methods: { enabled: true } });
+  const intent = await stripe!.setupIntents.create({
+    customer: customerId,
+    usage: 'off_session',
+    automatic_payment_methods: { enabled: true },
+  });
   return { clientSecret: intent.client_secret!, customerId, publishableKey: env.STRIPE_PUBLISHABLE_KEY! };
 }
 

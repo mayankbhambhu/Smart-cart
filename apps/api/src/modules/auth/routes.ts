@@ -43,7 +43,9 @@ import { sendSms, smsConfigured } from '../../services/sms';
 
 export const authRouter = Router();
 // Only credential checks count towards the brute-force limit; refreshing a session does not.
-authRouter.use((req, res, next) => (req.method === 'POST' && !['/refresh', '/logout'].includes(req.path) ? authLimiter(req, res, next) : next()));
+authRouter.use((req, res, next) =>
+  req.method === 'POST' && !['/refresh', '/logout'].includes(req.path) ? authLimiter(req, res, next) : next(),
+);
 
 const OTP_TTL_SECONDS = 300;
 const OTP_MAX_ATTEMPTS = 5;
@@ -152,7 +154,10 @@ authRouter.post('/otp/verify', async (req, res) => {
   if (!otp || otp.expiresAt < new Date()) throw new AppError(400, 'OTP_EXPIRED', 'This code has expired. Request a new one.');
   if (otp.attempts >= OTP_MAX_ATTEMPTS) throw tooManyRequests('Too many wrong attempts. Request a new code.');
   if (otp.codeHash !== sha256(`${input.phone}:${input.code}`)) {
-    await db.update(otpCodes).set({ attempts: otp.attempts + 1 }).where(eq(otpCodes.id, otp.id));
+    await db
+      .update(otpCodes)
+      .set({ attempts: otp.attempts + 1 })
+      .where(eq(otpCodes.id, otp.id));
     throw new AppError(400, 'OTP_INVALID', 'That code is not correct');
   }
 
@@ -257,9 +262,7 @@ authRouter.post('/staff/login', async (req, res) => {
     .where(
       and(
         eq(users.kind, 'STAFF'),
-        byEmployeeCode?.userId
-          ? eq(users.id, byEmployeeCode.userId)
-          : or(eq(users.username, identifier), eq(users.email, identifier)),
+        byEmployeeCode?.userId ? eq(users.id, byEmployeeCode.userId) : or(eq(users.username, identifier), eq(users.email, identifier)),
       ),
     )
     .limit(1);
@@ -270,7 +273,15 @@ authRouter.post('/staff/login', async (req, res) => {
   if (memberships.length === 0 || user.status !== 'ACTIVE') {
     throw new AppError(403, 'ACCOUNT_DISABLED', 'Your staff account has been deactivated. Contact your store manager.');
   }
-  await audit(db, { actorId: user.id, actorKind: 'STAFF', actorName: user.name, action: 'STAFF_LOGIN', entityType: 'user', entityId: user.id, ip: req.ip });
+  await audit(db, {
+    actorId: user.id,
+    actorKind: 'STAFF',
+    actorName: user.name,
+    action: 'STAFF_LOGIN',
+    entityType: 'user',
+    entityId: user.id,
+    ip: req.ip,
+  });
   res.json(await issueSession(user, req, res));
 });
 
@@ -284,7 +295,15 @@ authRouter.post('/admin/login', async (req, res) => {
   if (!user || !(await verifyPassword(input.password, user.passwordHash))) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Incorrect email or password');
   }
-  await audit(db, { actorId: user.id, actorKind: 'ADMIN', actorName: user.name, action: 'ADMIN_LOGIN', entityType: 'user', entityId: user.id, ip: req.ip });
+  await audit(db, {
+    actorId: user.id,
+    actorKind: 'ADMIN',
+    actorName: user.name,
+    action: 'ADMIN_LOGIN',
+    entityType: 'user',
+    entityId: user.id,
+    ip: req.ip,
+  });
   res.json(await issueSession(user, req, res));
 });
 
@@ -327,7 +346,15 @@ authRouter.post('/change-password', requireAuth(), async (req, res) => {
     .set({ passwordHash: await hashPassword(input.newPassword), mustChangePassword: false })
     .where(eq(users.id, user.id))
     .returning();
-  await audit(db, { actorId: user.id, actorKind: user.kind, actorName: user.name, action: 'PASSWORD_CHANGED', entityType: 'user', entityId: user.id, ip: req.ip });
+  await audit(db, {
+    actorId: user.id,
+    actorKind: user.kind,
+    actorName: user.name,
+    action: 'PASSWORD_CHANGED',
+    entityType: 'user',
+    entityId: user.id,
+    ip: req.ip,
+  });
   res.json(await issueSession(updated as UserRow, req, res));
 });
 
@@ -366,7 +393,10 @@ authRouter.post('/password/reset', async (req, res) => {
     throw new AppError(400, 'OTP_EXPIRED', 'This code has expired. Request a new one.');
   }
   if (otp.codeHash !== sha256(`${input.email}:${input.code}`)) {
-    await db.update(otpCodes).set({ attempts: otp.attempts + 1 }).where(eq(otpCodes.id, otp.id));
+    await db
+      .update(otpCodes)
+      .set({ attempts: otp.attempts + 1 })
+      .where(eq(otpCodes.id, otp.id));
     throw new AppError(400, 'OTP_INVALID', 'That code is not correct');
   }
   const [user] = await db

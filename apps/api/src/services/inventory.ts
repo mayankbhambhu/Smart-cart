@@ -92,11 +92,7 @@ export async function changeStock(tx: Transaction, input: StockChangeInput, afte
   const shelfDelta = shelf - sp.shelfQty;
   const storageDelta = storage - sp.storageQty;
 
-  const [row] = await tx
-    .update(storeProducts)
-    .set({ shelfQty: shelf, storageQty: storage })
-    .where(eq(storeProducts.id, sp.id))
-    .returning();
+  const [row] = await tx.update(storeProducts).set({ shelfQty: shelf, storageQty: storage }).where(eq(storeProducts.id, sp.id)).returning();
 
   await tx.insert(inventoryMovements).values({
     storeId: sp.storeId,
@@ -298,8 +294,7 @@ async function onAlertRaised(
       sp.storeId,
       warehouse.map((w) => w.id),
     );
-    const assigner =
-      staff.find((e) => e.role === 'STORE_MANAGER') ?? staff.find((e) => e.role === 'OWNER') ?? supervisors[0];
+    const assigner = staff.find((e) => e.role === 'STORE_MANAGER') ?? staff.find((e) => e.role === 'OWNER') ?? supervisors[0];
     if (assignee && assigner) {
       const quantity = Math.max(1, Math.min(sp.storageQty, sp.restockTarget - sp.shelfQty));
       const [task] = await tx
@@ -432,10 +427,7 @@ export async function listAlerts(
 ): Promise<RestockAlert[]> {
   const rows = await alertQuery(executor)
     .where(and(eq(restockAlerts.storeId, storeId), inArray(restockAlerts.status, statuses)))
-    .orderBy(
-      sql`case when ${restockAlerts.level} = 'OUT_OF_STOCK' then 0 else 1 end`,
-      asc(restockAlerts.createdAt),
-    )
+    .orderBy(sql`case when ${restockAlerts.level} = 'OUT_OF_STOCK' then 0 else 1 end`, asc(restockAlerts.createdAt))
     .limit(limit);
   return rows.map(serializeAlert);
 }

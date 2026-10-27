@@ -82,13 +82,7 @@ export async function requireStaff(req: Request, _res: Response, next: NextFunct
     })
     .from(employees)
     .innerJoin(stores, eq(stores.id, employees.storeId))
-    .where(
-      and(
-        eq(employees.userId, req.auth.userId),
-        eq(employees.storeId, storeId),
-        inArray(employees.status, ['ACTIVE', 'ON_LEAVE']),
-      ),
-    )
+    .where(and(eq(employees.userId, req.auth.userId), eq(employees.storeId, storeId), inArray(employees.status, ['ACTIVE', 'ON_LEAVE'])))
     .limit(1);
   if (!membership) throw forbidden('You are not part of this store’s team');
   req.staff = { ...membership, storeId };

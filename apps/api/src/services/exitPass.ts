@@ -93,7 +93,11 @@ export async function verifyAtGate(input: { code: string; storeId: string; devic
 
   const token = parseExitPassToken(input.code);
   if (!token) return deny('MALFORMED');
-  const [pass] = await db.select().from(exitPasses).where(eq(exitPasses.tokenHash, sha256(token))).limit(1);
+  const [pass] = await db
+    .select()
+    .from(exitPasses)
+    .where(eq(exitPasses.tokenHash, sha256(token)))
+    .limit(1);
   if (!pass) return deny('NOT_FOUND');
   if (pass.storeId !== input.storeId) return deny('WRONG_STORE', pass.id, pass.orderId);
 

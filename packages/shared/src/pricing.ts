@@ -99,9 +99,7 @@ export function evaluateOffer(offer: OfferRule, lines: PricingLine[], channel: O
   }
 
   const eligible = lines.filter(
-    (line) =>
-      (!offer.productId || line.productId === offer.productId) &&
-      (!offer.categoryId || line.categoryId === offer.categoryId),
+    (line) => (!offer.productId || line.productId === offer.productId) && (!offer.categoryId || line.categoryId === offer.categoryId),
   );
   const eligibleTotal = eligible.reduce((sum, line) => sum + lineTotal(line), 0);
   if ((offer.productId || offer.categoryId) && eligibleTotal === 0) {
@@ -175,10 +173,7 @@ export function computeBill(input: ComputeBillInput): { bill: Bill; offer: Offer
   }
   const tip = channel === 'DELIVERY' ? Math.max(0, Math.round(input.tip ?? 0)) : 0;
 
-  const grossTax = lines.reduce(
-    (sum, line) => sum + (lineTotal(line) * line.taxRate) / (100 + line.taxRate),
-    0,
-  );
+  const grossTax = lines.reduce((sum, line) => sum + (lineTotal(line) * line.taxRate) / (100 + line.taxRate), 0);
   const discountRatio = itemTotal > 0 ? (itemTotal - couponDiscount) / itemTotal : 0;
   const taxIncluded = Math.round(grossTax * discountRatio);
 

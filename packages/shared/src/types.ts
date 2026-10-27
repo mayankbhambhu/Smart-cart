@@ -371,13 +371,7 @@ export interface ShoppingList extends ShoppingListSummary {
 }
 
 export type ListUpdateAction =
-  | 'ITEM_ADDED'
-  | 'ITEM_UPDATED'
-  | 'ITEM_REMOVED'
-  | 'LIST_UPDATED'
-  | 'MEMBER_JOINED'
-  | 'MEMBER_LEFT'
-  | 'LIST_DELETED';
+  'ITEM_ADDED' | 'ITEM_UPDATED' | 'ITEM_REMOVED' | 'LIST_UPDATED' | 'MEMBER_JOINED' | 'MEMBER_LEFT' | 'LIST_DELETED';
 
 export interface ListUpdateEvent {
   listId: string;

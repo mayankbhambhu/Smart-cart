@@ -133,8 +133,7 @@ export async function seedShiftsAndAttendance(
         const dow = zonedParts(zonedToUtc(date, '12:00', store.timezone), store.timezone).dow;
         if (dow === weeklyOff) continue;
         const week = Math.floor((offset + 35) / 7);
-        const template =
-          employee.role === 'STORE_MANAGER' ? TEMPLATES[2]! : (week + index) % 2 === 0 ? TEMPLATES[0]! : TEMPLATES[1]!;
+        const template = employee.role === 'STORE_MANAGER' ? TEMPLATES[2]! : (week + index) % 2 === 0 ? TEMPLATES[0]! : TEMPLATES[1]!;
         const startAt = zonedToUtc(date, template.startTime, store.timezone);
         const endAt = zonedToUtc(date, template.endTime, store.timezone);
         const shiftId = crypto.randomUUID();
@@ -182,21 +181,66 @@ export async function seedShiftsAndAttendance(
 }
 
 const TASK_LIBRARY: { title: string; category: TaskCategory; description: string; aisle?: number }[] = [
-  { title: 'Rotate dairy stock (FIFO)', category: 'RESTOCK', description: 'Move older milk and curd batches to the front of the chiller.', aisle: 2 },
-  { title: 'Clean spill near snacks aisle', category: 'CLEANING', description: 'Customer reported a cola spill at the end of aisle 4.', aisle: 4 },
-  { title: 'Cycle count: beverages', category: 'INVENTORY_COUNT', description: 'Count all SKUs in aisle 5 and update the system counts.', aisle: 5 },
-  { title: 'Set up festive sweets display', category: 'DISPLAY_SETUP', description: 'Build the end-cap display with Kaju Katli and Rasgulla tins.', aisle: 4 },
-  { title: 'Check expiry dates in bakery', category: 'INVENTORY_COUNT', description: 'Pull items expiring within 2 days and mark them for markdown.', aisle: 3 },
-  { title: 'Restock fresh produce bins', category: 'RESTOCK', description: 'Top up tomatoes, onions and bananas before the evening rush.', aisle: 1 },
-  { title: 'Fix price tags in staples aisle', category: 'DISPLAY_SETUP', description: 'Shelf labels for atta and rice still show last week’s prices.', aisle: 6 },
+  {
+    title: 'Rotate dairy stock (FIFO)',
+    category: 'RESTOCK',
+    description: 'Move older milk and curd batches to the front of the chiller.',
+    aisle: 2,
+  },
+  {
+    title: 'Clean spill near snacks aisle',
+    category: 'CLEANING',
+    description: 'Customer reported a cola spill at the end of aisle 4.',
+    aisle: 4,
+  },
+  {
+    title: 'Cycle count: beverages',
+    category: 'INVENTORY_COUNT',
+    description: 'Count all SKUs in aisle 5 and update the system counts.',
+    aisle: 5,
+  },
+  {
+    title: 'Set up festive sweets display',
+    category: 'DISPLAY_SETUP',
+    description: 'Build the end-cap display with Kaju Katli and Rasgulla tins.',
+    aisle: 4,
+  },
+  {
+    title: 'Check expiry dates in bakery',
+    category: 'INVENTORY_COUNT',
+    description: 'Pull items expiring within 2 days and mark them for markdown.',
+    aisle: 3,
+  },
+  {
+    title: 'Restock fresh produce bins',
+    category: 'RESTOCK',
+    description: 'Top up tomatoes, onions and bananas before the evening rush.',
+    aisle: 1,
+  },
+  {
+    title: 'Fix price tags in staples aisle',
+    category: 'DISPLAY_SETUP',
+    description: 'Shelf labels for atta and rice still show last week’s prices.',
+    aisle: 6,
+  },
   { title: 'Sanitise smart carts', category: 'CLEANING', description: 'Wipe handles and scanners of all smart carts at the entrance.' },
   { title: 'Help desk cover 6-8 pm', category: 'CUSTOMER_SERVICE', description: 'Cover the help desk during the evening rush.' },
-  { title: 'Replace flickering light in aisle 8', category: 'MAINTENANCE', description: 'Freezer aisle light is flickering; call facilities if needed.', aisle: 8 },
+  {
+    title: 'Replace flickering light in aisle 8',
+    category: 'MAINTENANCE',
+    description: 'Freezer aisle light is flickering; call facilities if needed.',
+    aisle: 8,
+  },
   { title: 'Pick morning pickup orders', category: 'ORDER_PICKING', description: 'Pack all pickup orders scheduled before 11 am.' },
   { title: 'Unload supplier delivery', category: 'RESTOCK', description: 'Hindustan Unilever delivery arriving at the back gate at 9 am.' },
   { title: 'Deep clean freezer aisle', category: 'CLEANING', description: 'Defrost and clean the ice cream freezer.', aisle: 8 },
   { title: 'Audit exit gate logs', category: 'OTHER', description: 'Review denied scans from yesterday and note any patterns.' },
-  { title: 'Restock personal care shelves', category: 'RESTOCK', description: 'Shampoo and soap facings are thin after the weekend.', aisle: 9 },
+  {
+    title: 'Restock personal care shelves',
+    category: 'RESTOCK',
+    description: 'Shampoo and soap facings are thin after the weekend.',
+    aisle: 9,
+  },
 ];
 
 const COMPLETION_NOTES = [
@@ -207,7 +251,13 @@ const COMPLETION_NOTES = [
   'Completed before the evening rush.',
 ];
 
-const REVIEW_COMMENTS = ['Great job, thanks!', 'Neat work.', 'Good, but please tell me when you start next time.', 'Perfect.', 'Well done.'];
+const REVIEW_COMMENTS = [
+  'Great job, thanks!',
+  'Neat work.',
+  'Good, but please tell me when you start next time.',
+  'Perfect.',
+  'Well done.',
+];
 
 export async function seedTasks(rng: Random, storeId: string, staff: SeededEmployee[], now: Date): Promise<number> {
   const manager = staff.find((e) => e.role === 'STORE_MANAGER')!;
@@ -258,7 +308,8 @@ export async function seedTasks(rng: Random, storeId: string, staff: SeededEmplo
         completedAt,
         completionNote: done ? rng.pick(COMPLETION_NOTES) : null,
         reviewRating: status === 'APPROVED' ? rng.weighted([3, 4, 4, 5, 5, 5], () => 1) : null,
-        reviewComment: status === 'APPROVED' ? rng.pick(REVIEW_COMMENTS) : status === 'REOPENED' ? 'Two facings are still empty, please finish.' : null,
+        reviewComment:
+          status === 'APPROVED' ? rng.pick(REVIEW_COMMENTS) : status === 'REOPENED' ? 'Two facings are still empty, please finish.' : null,
         reviewedById: reviewed ? assigner.id : null,
         reviewedAt: reviewed ? new Date(completedAt!.getTime() + rng.int(15, 240) * 60_000) : null,
         createdAt,

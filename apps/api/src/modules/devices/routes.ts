@@ -38,7 +38,8 @@ devicesRouter.post('/gate/verify', deviceType('EXIT_GATE'), async (req, res) => 
 
 /** Smart cart: pair with the shopper's session by scanning the code shown in their app. */
 devicesRouter.post('/cart/pair', deviceType('SMART_CART'), async (req, res) => {
-  const raw = typeof req.body?.pairingCode === 'string' ? (parseCartPairCode(req.body.pairingCode) ?? req.body.pairingCode) : req.body?.pairingCode;
+  const raw =
+    typeof req.body?.pairingCode === 'string' ? (parseCartPairCode(req.body.pairingCode) ?? req.body.pairingCode) : req.body?.pairingCode;
   const { pairingCode } = parse(DevicePairSchema, { pairingCode: raw });
   res.json(await pairCart(req.device!, pairingCode));
 });

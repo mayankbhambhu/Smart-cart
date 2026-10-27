@@ -1,10 +1,4 @@
-import {
-  discountPercent,
-  type CatalogProduct,
-  type DietaryTag,
-  type ItemLocation,
-  type StoreLayout,
-} from '@smartcart/shared';
+import { discountPercent, type CatalogProduct, type DietaryTag, type ItemLocation, type StoreLayout } from '@smartcart/shared';
 import { and, arrayContains, asc, desc, eq, gt, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { Executor } from '../db/client';
 import { categories, offers, orderItems, orders, products, storeProducts, stores } from '../db/schema';
@@ -225,16 +219,17 @@ export async function catalogProductsByIds(
   context?: CatalogContext,
 ): Promise<Map<string, CatalogProduct>> {
   if (productIds.length === 0) return new Map();
-  const { items } = await queryCatalog(
-    executor,
-    { storeId, productIds: [...new Set(productIds)], sort: 'name', limit: 500 },
-    context,
-  );
+  const { items } = await queryCatalog(executor, { storeId, productIds: [...new Set(productIds)], sort: 'name', limit: 500 }, context);
   return new Map(items.map((p) => [p.id, p]));
 }
 
 /** Best match in a store's catalogue for a free-text list item such as "milk". */
-export async function bestMatch(executor: Executor, storeId: string, text: string, context?: CatalogContext): Promise<CatalogProduct | null> {
+export async function bestMatch(
+  executor: Executor,
+  storeId: string,
+  text: string,
+  context?: CatalogContext,
+): Promise<CatalogProduct | null> {
   const { items } = await queryCatalog(executor, { storeId, q: text, inStockOnly: false, limit: 1, sort: 'relevance' }, context);
   return items[0] ?? null;
 }

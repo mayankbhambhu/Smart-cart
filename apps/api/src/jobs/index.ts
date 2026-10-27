@@ -73,7 +73,12 @@ export async function closeForgottenClockOuts(now = new Date()): Promise<number>
     .select({ record: attendanceRecords, shift: shifts })
     .from(attendanceRecords)
     .leftJoin(shifts, eq(shifts.id, attendanceRecords.shiftId))
-    .where(and(isNull(attendanceRecords.clockOutAt), lt(attendanceRecords.clockInAt, new Date(now.getTime() - FORGOTTEN_CLOCK_OUT_HOURS * 3600_000))));
+    .where(
+      and(
+        isNull(attendanceRecords.clockOutAt),
+        lt(attendanceRecords.clockInAt, new Date(now.getTime() - FORGOTTEN_CLOCK_OUT_HOURS * 3600_000)),
+      ),
+    );
   for (const { record, shift } of open) {
     const clockOutAt = shift && shift.endAt > record.clockInAt ? shift.endAt : new Date(record.clockInAt.getTime() + 8 * 3600_000);
     const minutes = Math.round((clockOutAt.getTime() - record.clockInAt.getTime()) / 60_000);

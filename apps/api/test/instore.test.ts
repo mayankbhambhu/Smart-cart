@@ -87,7 +87,11 @@ describe('Scan & Go with a family list', () => {
     expect(pass.token).toMatch(/^SC[0-9A-Z]{18}$/);
     expect(pass.uri).toBe(`smartcart://exit/${pass.token}`);
 
-    const wrongStoreGate = await api().post('/api/v1/devices/gate/verify').set('X-Device-Key', 'scdev_blr-kor-02_gate1').send({ code: pass.uri }).expect(200);
+    const wrongStoreGate = await api()
+      .post('/api/v1/devices/gate/verify')
+      .set('X-Device-Key', 'scdev_blr-kor-02_gate1')
+      .send({ code: pass.uri })
+      .expect(200);
     expect(wrongStoreGate.body).toMatchObject({ open: false, reason: 'WRONG_STORE' });
 
     const opened = await api().post('/api/v1/devices/gate/verify').set('X-Device-Key', gateKey).send({ code: pass.uri }).expect(200);
@@ -108,14 +112,22 @@ describe('Scan & Go with a family list', () => {
     const started = await api().post('/api/v1/instore/sessions').set(bearer(customer)).send({ storeId }).expect(201);
     const chips = await findProduct(storeId, 'Classic Salted Chips');
     await api().post(`/api/v1/instore/sessions/${started.body.id}/items`).set(bearer(customer)).send({ productId: chips.id }).expect(201);
-    const checkout = await api().post(`/api/v1/instore/sessions/${started.body.id}/checkout`).set(bearer(customer)).send({ paymentMethod: 'UPI' }).expect(200);
+    const checkout = await api()
+      .post(`/api/v1/instore/sessions/${started.body.id}/checkout`)
+      .set(bearer(customer))
+      .send({ paymentMethod: 'UPI' })
+      .expect(200);
     const paid = await api().post(`/api/v1/payments/${checkout.body.payment.id}/demo`).set(bearer(customer)).send({}).expect(200);
     const firstToken = paid.body.order.exitPass.token;
     const reissued = await api().post(`/api/v1/orders/${paid.body.order.id}/exit-pass`).set(bearer(customer)).expect(200);
     expect(reissued.body.token).not.toBe(firstToken);
     const old = await api().post('/api/v1/devices/gate/verify').set('X-Device-Key', gateKey).send({ code: firstToken }).expect(200);
     expect(old.body.reason).toBe('NOT_FOUND');
-    const fresh = await api().post('/api/v1/devices/gate/verify').set('X-Device-Key', gateKey).send({ code: reissued.body.token }).expect(200);
+    const fresh = await api()
+      .post('/api/v1/devices/gate/verify')
+      .set('X-Device-Key', gateKey)
+      .send({ code: reissued.body.token })
+      .expect(200);
     expect(fresh.body.open).toBe(true);
   });
 });
@@ -124,16 +136,28 @@ describe('smart cart hardware', () => {
   it('pairs with a shopper and syncs items dropped into the cart', async () => {
     const customer = await newCustomer('Smart Cart Shopper');
     const started = await api().post('/api/v1/instore/sessions').set(bearer(customer)).send({ storeId }).expect(201);
-    const paired = await api().post('/api/v1/devices/cart/pair').set('X-Device-Key', cartKey).send({ pairingCode: `smartcart://cart-pair/${started.body.pairingCode}` }).expect(200);
+    const paired = await api()
+      .post('/api/v1/devices/cart/pair')
+      .set('X-Device-Key', cartKey)
+      .send({ pairingCode: `smartcart://cart-pair/${started.body.pairingCode}` })
+      .expect(200);
     expect(paired.body.cartDevice.name).toBe('Smart Cart 02');
 
     const bread = await findProduct(storeId, 'Brown Bread');
     const before = await inventoryRow('Britannia Brown Bread');
-    const added = await api().post('/api/v1/devices/cart/items').set('X-Device-Key', cartKey).send({ barcode: bread.barcode, quantity: 1 }).expect(200);
+    const added = await api()
+      .post('/api/v1/devices/cart/items')
+      .set('X-Device-Key', cartKey)
+      .send({ barcode: bread.barcode, quantity: 1 })
+      .expect(200);
     expect(added.body.change).toMatchObject({ source: 'SMART_CART', quantity: 1 });
     expect((await inventoryRow('Britannia Brown Bread')).shelfQty).toBe(before.shelfQty - 1);
 
-    const removed = await api().post('/api/v1/devices/cart/items').set('X-Device-Key', cartKey).send({ barcode: bread.barcode, quantity: -1 }).expect(200);
+    const removed = await api()
+      .post('/api/v1/devices/cart/items')
+      .set('X-Device-Key', cartKey)
+      .send({ barcode: bread.barcode, quantity: -1 })
+      .expect(200);
     expect(removed.body.change.type).toBe('REMOVED');
     expect((await inventoryRow('Britannia Brown Bread')).shelfQty).toBe(before.shelfQty);
 
@@ -145,7 +169,11 @@ describe('smart cart hardware', () => {
     const started = await api().post('/api/v1/instore/sessions').set(bearer(customer)).send({ storeId }).expect(201);
     const cola = await findProduct(storeId, 'Coca-Cola');
     const before = await inventoryRow('Coca-Cola');
-    await api().post(`/api/v1/instore/sessions/${started.body.id}/items`).set(bearer(customer)).send({ productId: cola.id, quantity: 3 }).expect(201);
+    await api()
+      .post(`/api/v1/instore/sessions/${started.body.id}/items`)
+      .set(bearer(customer))
+      .send({ productId: cola.id, quantity: 3 })
+      .expect(201);
     await api().post(`/api/v1/instore/sessions/${started.body.id}/cancel`).set(bearer(customer)).expect(200);
     expect((await inventoryRow('Coca-Cola')).shelfQty).toBe(before.shelfQty);
   });
@@ -163,10 +191,17 @@ describe('low-stock alerts', () => {
     const row = await inventoryRow(productName);
     storeProductId = row.storeProductId;
     // Leave one unit above the threshold, then take two.
-    await db.update(storeProducts).set({ shelfQty: row.reorderThreshold + 1, storageQty: 50 }).where(eq(storeProducts.id, row.storeProductId));
+    await db
+      .update(storeProducts)
+      .set({ shelfQty: row.reorderThreshold + 1, storageQty: 50 })
+      .where(eq(storeProducts.id, row.storeProductId));
     const customer = await newCustomer('Salt Buyer');
     const started = await api().post('/api/v1/instore/sessions').set(bearer(customer)).send({ storeId }).expect(201);
-    await api().post(`/api/v1/instore/sessions/${started.body.id}/items`).set(bearer(customer)).send({ productId: row.productId, quantity: 2 }).expect(201);
+    await api()
+      .post(`/api/v1/instore/sessions/${started.body.id}/items`)
+      .set(bearer(customer))
+      .send({ productId: row.productId, quantity: 2 })
+      .expect(201);
 
     const worker = await staffSession('rahul.yadav');
     const alerts = await api().get(`/api/v1/ops/stores/${storeId}/alerts`).set(bearer(worker)).expect(200);
@@ -181,12 +216,21 @@ describe('low-stock alerts', () => {
     expect(task).toMatchObject({ category: 'RESTOCK', priority: 'HIGH' });
 
     const notifications = await api().get('/api/v1/me/notifications').set(bearer(worker)).expect(200);
-    expect(notifications.body.items.some((n: { type: string; title: string }) => n.type === 'RESTOCK_ALERT' && n.title.includes('Salt'))).toBe(true);
+    expect(
+      notifications.body.items.some((n: { type: string; title: string }) => n.type === 'RESTOCK_ALERT' && n.title.includes('Salt')),
+    ).toBe(true);
 
     // Restocking from storage resolves the alert.
-    const resolved = await api().post(`/api/v1/ops/stores/${storeId}/alerts/${alert.id}/resolve`).set(bearer(worker)).send({ restockQuantity: 20 }).expect(200);
+    const resolved = await api()
+      .post(`/api/v1/ops/stores/${storeId}/alerts/${alert.id}/resolve`)
+      .set(bearer(worker))
+      .send({ restockQuantity: 20 })
+      .expect(200);
     expect(resolved.body).toMatchObject({ status: 'RESOLVED', restockedQty: 20 });
-    const movements = await api().get(`/api/v1/ops/stores/${storeId}/inventory/${row.storeProductId}/movements`).set(bearer(worker)).expect(200);
+    const movements = await api()
+      .get(`/api/v1/ops/stores/${storeId}/inventory/${row.storeProductId}/movements`)
+      .set(bearer(worker))
+      .expect(200);
     expect(movements.body.map((m: { type: string }) => m.type)).toEqual(expect.arrayContaining(['RESTOCK', 'CART_ADD']));
   });
 });

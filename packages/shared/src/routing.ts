@@ -70,11 +70,7 @@ export function walkingPath(layout: StoreLayout, a: RoutablePoint, b: RoutablePo
   return [strip(a), { x: a.x, y: corridorY }, { x: b.x, y: corridorY }, strip(b)];
 }
 
-export function planRoute<T>(
-  layout: StoreLayout,
-  items: RouteRequestItem<T>[],
-  options: RouteOptions = {},
-): RoutePlan<T> {
+export function planRoute<T>(layout: StoreLayout, items: RouteRequestItem<T>[], options: RouteOptions = {}): RoutePlan<T> {
   const start: RoutablePoint = options.start ?? layout.entrance;
   const end: RoutablePoint = options.end ?? layout.exit;
   const speed = options.walkingSpeed ?? DEFAULT_WALKING_SPEED;
@@ -116,12 +112,10 @@ export function planRoute<T>(
   if (visits.length <= 1) {
     order = visits.map((_, i) => i + 1);
   } else {
-    const candidates = [nearestNeighbourOrder(dist, visits.length), sShapeOrder(layout, nodes, visits.length, start)].map(
-      (seed) => twoOpt(seed, dist),
+    const candidates = [nearestNeighbourOrder(dist, visits.length), sShapeOrder(layout, nodes, visits.length, start)].map((seed) =>
+      twoOpt(seed, dist),
     );
-    order = candidates.reduce((best, candidate) =>
-      tourLength(candidate, dist) < tourLength(best, dist) ? candidate : best,
-    );
+    order = candidates.reduce((best, candidate) => (tourLength(candidate, dist) < tourLength(best, dist) ? candidate : best));
   }
 
   const stops: RouteStop<T>[] = [];
@@ -193,9 +187,7 @@ function sShapeOrder(layout: StoreLayout, nodes: RoutablePoint[], count: number,
   const order: number[] = [];
   aisleOrder.forEach((aisle, position) => {
     const goingBack = position % 2 === 0; // first aisle: walk from the front towards the back
-    const stops = byAisle.get(aisle)!.sort((a, b) =>
-      goingBack ? nodes[b]!.y - nodes[a]!.y : nodes[a]!.y - nodes[b]!.y,
-    );
+    const stops = byAisle.get(aisle)!.sort((a, b) => (goingBack ? nodes[b]!.y - nodes[a]!.y : nodes[a]!.y - nodes[b]!.y));
     order.push(...stops);
   });
   return order;

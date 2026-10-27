@@ -65,7 +65,13 @@ function serialize(row: TicketRow, messages: TicketMessage[]): Ticket {
   };
 }
 
-export async function listTickets(filter: { storeId?: string; statuses?: TicketStatus[]; category?: string; limit?: number; offset?: number }) {
+export async function listTickets(filter: {
+  storeId?: string;
+  statuses?: TicketStatus[];
+  category?: string;
+  limit?: number;
+  offset?: number;
+}) {
   const conditions: SQL[] = [];
   if (filter.storeId) conditions.push(eq(tickets.storeId, filter.storeId));
   if (filter.statuses && filter.statuses.length > 0) conditions.push(inArray(tickets.status, filter.statuses));
@@ -104,7 +110,10 @@ export async function loadTicket(ticketId: string, includeInternal: boolean): Pr
 }
 
 async function adminRecipients(): Promise<string[]> {
-  const admins = await db.select({ id: users.id }).from(users).where(and(eq(users.kind, 'ADMIN'), eq(users.status, 'ACTIVE')));
+  const admins = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.kind, 'ADMIN'), eq(users.status, 'ACTIVE')));
   return admins.map((a) => a.id);
 }
 
@@ -163,7 +172,9 @@ export async function addMessage(
     const [ticket] = await tx.select().from(tickets).where(eq(tickets.id, ticketId)).for('update');
     if (!ticket) throw notFound('Ticket');
     if (ticket.status === 'CLOSED') throw conflict('This request is closed');
-    await tx.insert(ticketMessages).values({ ticketId, authorId: author.userId, side: author.side, body, isInternal: author.side === 'ADMIN' && isInternal });
+    await tx
+      .insert(ticketMessages)
+      .values({ ticketId, authorId: author.userId, side: author.side, body, isInternal: author.side === 'ADMIN' && isInternal });
     // A store reply re-opens a ticket that was waiting on the store.
     const nextStatus: TicketStatus | null =
       author.side === 'STORE' && (ticket.status === 'WAITING_ON_STORE' || ticket.status === 'RESOLVED')
@@ -176,7 +187,8 @@ export async function addMessage(
       .set({ updatedAt: new Date(), ...(nextStatus ? { status: nextStatus } : {}) })
       .where(eq(tickets.id, ticketId));
     if (!(author.side === 'ADMIN' && isInternal)) {
-      const recipients = author.side === 'ADMIN' ? [ticket.raisedById] : ticket.assignedAdminId ? [ticket.assignedAdminId] : await adminRecipients();
+      const recipients =
+        author.side === 'ADMIN' ? [ticket.raisedById] : ticket.assignedAdminId ? [ticket.assignedAdminId] : await adminRecipients();
       await notifyUsers(
         tx,
         recipients,

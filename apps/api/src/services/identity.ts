@@ -21,9 +21,7 @@ export interface VerifiedIdentity {
 }
 
 export function googleClientIds(): string[] {
-  return [env.GOOGLE_WEB_CLIENT_ID, env.GOOGLE_IOS_CLIENT_ID, env.GOOGLE_ANDROID_CLIENT_ID].filter(
-    (id): id is string => Boolean(id),
-  );
+  return [env.GOOGLE_WEB_CLIENT_ID, env.GOOGLE_IOS_CLIENT_ID, env.GOOGLE_ANDROID_CLIENT_ID].filter((id): id is string => Boolean(id));
 }
 
 export function appleClientIds(): string[] {

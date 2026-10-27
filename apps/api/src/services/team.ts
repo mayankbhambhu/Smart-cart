@@ -43,7 +43,9 @@ export async function listEmployees(
   if (filter.statuses && filter.statuses.length > 0) conditions.push(inArray(employees.status, filter.statuses));
   if (filter.q) {
     const like = `%${filter.q}%`;
-    conditions.push(or(ilike(employees.fullName, like), ilike(employees.employeeCode, like), ilike(employees.phone, like), ilike(employees.email, like))!);
+    conditions.push(
+      or(ilike(employees.fullName, like), ilike(employees.employeeCode, like), ilike(employees.phone, like), ilike(employees.email, like))!,
+    );
   }
   const rows = await executor
     .select({
@@ -105,7 +107,14 @@ export function serializeEmployee(
 
 export async function getEmployee(employeeId: string, showWages: boolean): Promise<Employee> {
   const [row] = await db
-    .select({ employee: employees, storeName: stores.name, storeCode: stores.code, username: users.username, lastLoginAt: users.lastLoginAt, managerName: manager.fullName })
+    .select({
+      employee: employees,
+      storeName: stores.name,
+      storeCode: stores.code,
+      username: users.username,
+      lastLoginAt: users.lastLoginAt,
+      managerName: manager.fullName,
+    })
     .from(employees)
     .innerJoin(stores, eq(stores.id, employees.storeId))
     .leftJoin(users, eq(users.id, employees.userId))
@@ -149,7 +158,9 @@ export async function offboardEmployee(
       }
       await revokeAllSessions(tx, employee.userId);
     }
-    await tx.execute(sql`update tasks set status = 'CANCELLED' where assignee_id = ${employeeId} and status in ('TODO', 'IN_PROGRESS', 'REOPENED')`);
+    await tx.execute(
+      sql`update tasks set status = 'CANCELLED' where assignee_id = ${employeeId} and status in ('TODO', 'IN_PROGRESS', 'REOPENED')`,
+    );
     await tx.execute(sql`delete from shifts where employee_id = ${employeeId} and start_at > now()`);
     await audit(tx, {
       actorId: actor.userId,
@@ -235,9 +246,13 @@ function serializeRequest(
   };
 }
 
-export async function listRequests(
-  filter: { storeId?: string; statuses?: CredentialRequestStatus[]; q?: string; limit?: number; offset?: number },
-): Promise<{ items: CredentialRequest[]; total: number }> {
+export async function listRequests(filter: {
+  storeId?: string;
+  statuses?: CredentialRequestStatus[];
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: CredentialRequest[]; total: number }> {
   const conditions: SQL[] = [];
   if (filter.storeId) conditions.push(eq(credentialRequests.storeId, filter.storeId));
   if (filter.statuses && filter.statuses.length > 0) conditions.push(inArray(credentialRequests.status, filter.statuses));
@@ -265,7 +280,11 @@ export async function listRequests(
   const ids = rows.map((r) => r.request.id);
   const events =
     ids.length > 0
-      ? await db.select().from(credentialRequestEvents).where(inArray(credentialRequestEvents.requestId, ids)).orderBy(asc(credentialRequestEvents.createdAt))
+      ? await db
+          .select()
+          .from(credentialRequestEvents)
+          .where(inArray(credentialRequestEvents.requestId, ids))
+          .orderBy(asc(credentialRequestEvents.createdAt))
       : [];
   return {
     total: rows[0]?.total ?? 0,
@@ -417,12 +436,10 @@ export async function updateRequest(
       .for('update');
     if (!request) throw notFound('Request');
     if (!EDITABLE.includes(request.status)) throw conflict('This request can no longer be edited');
-    if (actor.role !== 'OWNER' && request.requestedById !== actor.userId) throw forbidden('Only the requester or the owner can edit this request');
+    if (actor.role !== 'OWNER' && request.requestedById !== actor.userId)
+      throw forbidden('Only the requester or the owner can edit this request');
     const candidate = normalizeCandidate({ ...request.candidate, ...patch } as CandidateInput);
-    await tx
-      .update(credentialRequests)
-      .set({ candidate, candidateName: candidate.fullName })
-      .where(eq(credentialRequests.id, requestId));
+    await tx.update(credentialRequests).set({ candidate, candidateName: candidate.fullName }).where(eq(credentialRequests.id, requestId));
     await recordEvent(tx, request, actor, 'EDITED', request.status, null);
     publishRequest(afterCommit, request);
   });
@@ -458,7 +475,8 @@ export async function resubmitRequest(
       .where(eq(credentialRequests.id, requestId));
     await recordEvent(tx, request, actor, 'RESUBMITTED', toStatus, comment ?? null);
     const leaders = await storeLeadership(tx, storeId);
-    const recipients = toStatus === 'PENDING_OWNER' ? leaders.filter((l) => l.role === 'OWNER').map((l) => l.userId) : await adminUserIds(tx);
+    const recipients =
+      toStatus === 'PENDING_OWNER' ? leaders.filter((l) => l.role === 'OWNER').map((l) => l.userId) : await adminUserIds(tx);
     await notifyUsers(
       tx,
       recipients,
@@ -595,7 +613,9 @@ export async function adminReview(
       const [active] = await tx
         .select({ id: employees.id })
         .from(employees)
-        .where(and(eq(employees.userId, user.id), eq(employees.storeId, request.storeId), inArray(employees.status, ['ACTIVE', 'ON_LEAVE'])))
+        .where(
+          and(eq(employees.userId, user.id), eq(employees.storeId, request.storeId), inArray(employees.status, ['ACTIVE', 'ON_LEAVE'])),
+        )
         .limit(1);
       if (active) throw conflict(`${candidate.fullName} already works at this store`);
       [user] = await tx
